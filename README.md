@@ -1,6 +1,17 @@
 # VEYRA
 
-A cinematic, responsive frontend for a fictional streaming service. The web app runs as a Vite + React single-page application and is packaged for Android with Capacitor.
+VEYRA is a cinematic React/Vite application packaged for Android with Capacitor. It now consumes catalog and metadata endpoints through a dedicated MovieBox service layer; it does not bundle a sample movie catalog or simulate playback/download progress.
+
+## Configure the catalog API
+
+Create a local environment file from the example and set a deployment you control or are authorized to use:
+
+```bash
+cp .env.example .env.local
+# Set VITE_MOVIEBOX_API_BASE_URL in .env.local
+```
+
+`VITE_MOVIEBOX_API_BASE_URL` is public configuration compiled into the web app and Android assets. Do not put upstream credentials, private tokens, or secrets in any `VITE_*` variable. Keep them on the API server. See [the integration audit](docs/MOVIEBOX_INTEGRATION.md) for the endpoint mapping and the media/security boundary.
 
 ## Run locally
 
@@ -9,17 +20,18 @@ npm ci
 npm run dev
 ```
 
-Vite prints the local development URL. To make a production web build:
+Vite binds to `0.0.0.0`. Without a configured API base URL, the app fails closed and shows an API configuration state rather than rendering fixture content.
+
+## Checks and production build
 
 ```bash
+npm test
 npm run build
 ```
 
 ## Android debug APK
 
-This repository includes the generated Capacitor Android project and a GitHub Actions workflow (`Android APK`) that builds a debug APK on pushes, pull requests to `main`, and manual dispatches.
-
-Requirements for a local Android build: Node.js 22, JDK 21, and the Android SDK (platform/build tools 35).
+Requirements for a local Android build: Node.js 22, JDK 21, and Android SDK platform/build tools 35.
 
 ```bash
 npm ci
@@ -29,17 +41,16 @@ cd android
 ./gradlew assembleDebug
 ```
 
-The APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. GitHub Actions uploads the same file as the `veyra-debug-apk` artifact. Release signing is intentionally not configured; add a protected keystore and signing secrets before distributing a release build.
+The APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. The GitHub Actions `Android APK` workflow builds and uploads the debug artifact. Release signing is not configured.
 
-## Experience
+## Current feature status
 
-- Mobile-first Home, Discover, Search, details, series seasons/episodes, My List, Continue Watching, Watch History, Downloads, Profile, Settings, Devices, Notifications, and offline screens.
-- Branded splash and welcome/sign-in/sign-up/forgot-password flows.
-- Mock playback controls, quality/subtitle/audio sheets, seeking, buffering/error states, and a next-episode overlay.
-- A separate TV layout with a focus ring and keyboard/D-pad navigation (`Arrow` keys, `Enter`, `Escape`/`Backspace`, and space for play/pause).
-- Original local key-art assets, responsive poster rails, skeleton states, empty states, and an installable/offline-cached web shell.
-- Mock preferences, list, downloads, history, and notifications are persisted in local storage.
+- Home, Discover, Search, item details, and related-title rails use normalized results from configured catalog endpoints.
+- My List stores compact catalog references locally.
+- History and Continue Watching contain no seeded entries and only become meaningful when verified playback is integrated.
+- Playback, quality switching, subtitles, downloads, and offline media are intentionally disabled. The supplied MovieBox repository includes upstream identity/referrer spoofing and public proxy relays; its deployment and media authorization could not be verified. VEYRA does not request those media routes, invent URLs, or simulate media controls/progress.
+- The service worker caches only the VEYRA same-origin app shell/assets; remote API data and media are not available offline.
 
-## Intentional mock behavior
+## Verification
 
-No backend, real authentication, content licensing/catalog service, account sync, recommendations, subtitles, audio tracks, streaming source, or actual file downloads are connected. Player controls operate a mock preview timeline over local key art; download actions update mock progress. The service worker caches the web shell and same-origin assets after the first online visit; remote services and any uncached content remain unavailable offline.
+The source advertises a MovieBox API deployment, but its host did not complete a TLS connection from the audit sandbox and the repository has no `/health` route. Catalog data from a live service, Android network behavior, streaming, downloads, subtitles, offline playback, and real-device testing are **NOT VERIFIED**. See [docs/MOVIEBOX_INTEGRATION.md](docs/MOVIEBOX_INTEGRATION.md).

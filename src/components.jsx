@@ -90,7 +90,7 @@ export function PosterCard({ item, onClick, progress, subtitle, onRemove, tvFocu
     <article className={`poster-card-wrap ${compact ? 'poster-compact' : ''}`}>
       <button className="poster-card" onClick={() => onClick?.(item)} data-tv-focus={tvFocus ? 'true' : undefined} aria-label={`Open ${item.title}`}>
         <span className="poster-art">
-          <img src={item.poster} alt={`${item.title} artwork`} loading="lazy" />
+          {item.poster ? <img src={item.poster} alt={`${item.title} artwork`} loading="lazy" onError={(event) => event.currentTarget.remove()} /> : <span className="poster-art-fallback" aria-hidden="true" />}
           <span className="poster-vignette" />
           {item.badge && <span className="poster-badge">{item.badge}</span>}
           {progress != null && <ProgressBar value={progress} className="poster-progress" />}

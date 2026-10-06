@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "test": "node --test src/services/moviebox/*.test.js",
     "preview": "vite preview --host 0.0.0.0",
     "cap:sync": "npm run build && cap sync android",
     "android:debug": "cap sync android && cd android && ./gradlew assembleDebug"
