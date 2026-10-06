@@ -1,0 +1,1928 @@
+VEYRA — FULL MOVIEBOX API INTEGRATION & MOCK-DATA REMOVAL
+
+You are taking an already-built VEYRA streaming application and turning it from a frontend/demo implementation into a real API-driven streaming application.
+
+This is an implementation task, not a redesign exercise.
+
+The existing VEYRA frontend is already built in GitHub. Your job is to deeply inspect the existing application, deeply inspect the MovieBox API repository and its architecture, determine the correct integration strategy, then implement the complete connection.
+
+1. SOURCE-OF-TRUTH REPOSITORIES
+
+VEYRA application
+
+GitHub repository:
+
+https://github.com/macaulay-spec/Arena-veyra
+
+Working branch:
+
+https://github.com/macaulay-spec/Arena-veyra/tree/arena/06675f17-arena-veyra
+
+Current application structure includes the existing React/Vite/Capacitor Android app and its current UI.
+
+Important existing files to inspect:
+
+https://github.com/macaulay-spec/Arena-veyra/blob/arena/06675f17-arena-veyra/src/App.jsx
+
+https://github.com/macaulay-spec/Arena-veyra/blob/arena/06675f17-arena-veyra/src/components.jsx
+
+https://github.com/macaulay-spec/Arena-veyra/blob/arena/06675f17-arena-veyra/src/data.js
+
+https://github.com/macaulay-spec/Arena-veyra/blob/arena/06675f17-arena-veyra/src/styles.css
+
+https://github.com/macaulay-spec/Arena-veyra/blob/arena/06675f17-arena-veyra/package.json
+
+https://github.com/macaulay-spec/Arena-veyra/blob/arena/06675f17-arena-veyra/.github/workflows/android-apk.yml
+
+Do not assume these files are complete or correct. Read and understand the actual implementation before modifying anything.
+
+---
+
+MovieBox API
+
+Exact repository:
+
+https://github.com/Godszeal/movieboxapi
+
+Main branch:
+
+https://github.com/Godszeal/movieboxapi/tree/main
+
+Important files to deeply inspect:
+
+https://github.com/Godszeal/movieboxapi/blob/main/README.md
+
+https://github.com/Godszeal/movieboxapi/blob/main/lib/moviebox-client.ts
+
+https://github.com/Godszeal/movieboxapi/blob/main/lib/proxy-helper.ts
+
+Also inspect the complete repository structure, package configuration, API route implementation, environment variables, deployment assumptions, proxy implementation, response formats, error handling, and every relevant endpoint.
+
+DO NOT invent API behavior from memory.
+
+Use the repository implementation itself as the authority.
+
+---
+
+2. PRIMARY OBJECTIVE
+
+Convert VEYRA from:
+
+Mock UI
+↓
+Mock catalog
+↓
+Fake movie details
+↓
+Fake episode data
+↓
+Fake player
+↓
+Fake download progress
+
+into:
+
+VEYRA
+↓
+Real MovieBox API service
+↓
+Real catalog/search/details data
+↓
+Real streams
+↓
+VEYRA player
+↓
+Real playback
+↓
+Real download URLs
+↓
+Device download handling
+
+The final app must no longer depend on fake movie/series data for its primary functionality.
+
+---
+
+3. FIRST: DEEP-DIVE AUDIT BEFORE CODING
+
+Before making changes, inspect both repositories thoroughly.
+
+For VEYRA determine:
+
+- current routing/navigation
+- all screens
+- current data flow
+- all mock data
+- localStorage usage
+- fake loading states
+- fake player implementation
+- fake download implementation
+- search implementation
+- movie details implementation
+- series details implementation
+- episode implementation
+- My List implementation
+- History implementation
+- Continue Watching implementation
+- settings
+- profile
+- authentication assumptions
+- Android/Capacitor architecture
+- service worker behavior
+- network behavior
+- build process
+- environment-variable handling
+
+For MovieBox API determine:
+
+- framework/runtime
+- available endpoints
+- endpoint parameters
+- response shapes
+- media URL generation
+- stream URL generation
+- download URL generation
+- proxy behavior
+- subtitle behavior
+- mirror behavior
+- quality handling
+- season/episode handling
+- errors
+- caching behavior
+- deployment requirements
+- required environment variables
+- whether the API already exposes CORS correctly
+- whether frontend requests should go directly to it or through another backend layer
+
+Do not begin random rewrites before this mapping is complete.
+
+Create a short implementation map in the project documentation describing:
+
+VEYRA screen
+↓
+service/function
+↓
+MovieBox endpoint
+↓
+response transformation
+↓
+UI component
+
+---
+
+4. REMOVE MOCK DATA COMPLETELY
+
+The current VEYRA application contains demo/mock behavior.
+
+Remove it from production execution paths.
+
+Search the entire project for:
+
+- mock
+- demo
+- fake
+- placeholder data
+- hardcoded movies
+- hardcoded series
+- hardcoded episodes
+- fake progress
+- fake downloads
+- fake stream URLs
+- fake recommendations
+- sample catalog
+- static search results
+- artificial player timers
+
+Do not simply leave the mock implementation underneath a feature flag and continue using it.
+
+Primary application flows must use real API responses.
+
+Static data may remain only for:
+
+- UI constants
+- icons
+- text
+- static configuration
+- fallback copy
+- design tokens
+
+It must NOT act as the movie/series catalog.
+
+---
+
+5. CREATE A CLEAN API SERVICE LAYER
+
+Do not scatter fetch calls throughout React components.
+
+Create a dedicated MovieBox service layer.
+
+For example:
+
+src/
+  services/
+    moviebox/
+      client
+      homepage
+      search
+      details
+      streams
+      subtitles
+      downloads
+      recommendations
+
+Use the actual project conventions if a better structure already exists.
+
+Create strongly defined functions for things such as:
+
+getHomepage()
+getTrending()
+getPopularMoviesAndSeries()
+search()
+getSearchSuggestions()
+getItemDetails()
+getMedia()
+getStream()
+getSubtitles()
+getRecommendations()
+getMirrorHosts()
+
+Map these to the actual MovieBox API implementation.
+
+React components should never need to understand MovieBox's internal request structure.
+
+Example:
+
+UI
+↓
+VEYRA service
+↓
+MovieBox client
+↓
+MovieBox API
+
+---
+
+6. API BASE URL CONFIGURATION
+
+Do not hardcode a temporary local development server into the app.
+
+Create proper environment configuration.
+
+The production VEYRA client should have a configurable API base URL such as:
+
+VITE_MOVIEBOX_API_BASE_URL
+
+Use the actual environment convention already used by the project where appropriate.
+
+Support:
+
+development
+preview
+production
+
+Make sure Android builds receive the correct production API endpoint.
+
+Do not expose secret server-side credentials in the Android bundle.
+
+Any secrets required by the MovieBox API must remain server-side.
+
+---
+
+7. DEPLOY THE MOVIEBOX API IF NECESSARY
+
+The MovieBox repository is a separate service.
+
+Determine whether it is already deployed.
+
+If it is not deployed, prepare the correct production deployment based on the repository's actual framework.
+
+Do not arbitrarily rewrite the API into another framework.
+
+Determine:
+
+- Node/runtime requirements
+- build command
+- start command
+- environment variables
+- port handling
+- CORS
+- health endpoint
+- proxy requirements
+- media streaming behavior
+- download proxy behavior
+
+The API service must be reachable from:
+
+Web VEYRA
+Android VEYRA
+
+The deployment must support long-running media requests and HTTP Range requests where required by the implementation.
+
+Do not use a deployment platform that will obviously break streaming/proxy behavior.
+
+---
+
+8. CONNECT VEYRA HOME TO REAL DATA
+
+Replace mock home content.
+
+Use the real MovieBox homepage/trending/hot/discovery endpoints exposed by the API.
+
+Home should load real:
+
+- featured content
+- trending content
+- movies
+- series
+- popular content
+- relevant recommendations
+
+Preserve VEYRA's existing visual design.
+
+Do not redesign the screen simply because the data source changed.
+
+Create adapters where required so MovieBox response objects are converted into the VEYRA content model.
+
+Example conceptual model:
+
+{
+  id,
+  title,
+  type,
+  poster,
+  backdrop,
+  year,
+  rating,
+  runtime,
+  genres,
+  overview,
+  provider,
+  providerId,
+  detailPath
+}
+
+Use the actual fields returned by the API and map them cleanly.
+
+---
+
+9. SEARCH MUST BECOME REAL
+
+Replace all fake search behavior.
+
+Implement:
+
+search input
+↓
+debounced request
+↓
+MovieBox /api/search
+↓
+real results
+↓
+movie/series cards
+
+Also integrate search suggestions if supported.
+
+Use:
+
+/api/search
+/api/search-suggestions
+/api/search-suggestion
+
+only according to the actual repository implementation.
+
+Handle:
+
+- empty query
+- loading
+- slow network
+- API errors
+- no results
+- pagination if supported
+- duplicate requests
+- rapid typing
+- cancellation/stale results
+
+Do not make the UI freeze while searching.
+
+---
+
+10. MOVIE DETAILS
+
+Replace fake movie details with real MovieBox item details.
+
+Use:
+
+/api/item-details
+
+and/or:
+
+/api/media
+
+based on the actual API implementation.
+
+Details screen must display real:
+
+- poster
+- backdrop
+- title
+- year
+- rating
+- runtime
+- genre
+- description
+- cast/metadata where available
+- related/recommended titles
+- available playback options
+
+The selected item must retain the information needed later to request media.
+
+Do not throw away identifiers required by the API.
+
+Keep:
+
+subjectId
+detailPath
+
+or the actual equivalent from the API.
+
+---
+
+11. SERIES AND EPISODES
+
+Series support must be real.
+
+Do not use fake season arrays or fake episode lists.
+
+The workflow must become:
+
+Series details
+↓
+real season information
+↓
+season selector
+↓
+real episodes
+↓
+select episode
+↓
+request stream
+
+Support:
+
+- multiple seasons
+- episode numbering
+- episode title
+- episode description
+- episode thumbnail
+- runtime when available
+- watched state
+- progress
+- current episode
+- next episode where data exists
+
+The implementation must correctly pass the MovieBox identifiers and:
+
+season
+episode
+
+values to the API.
+
+Be careful with the API's indexing convention. Do not assume episode numbering and API indexing are identical.
+
+Verify it against the repository implementation.
+
+---
+
+12. REAL STREAMING
+
+This is the most important part.
+
+Replace the fake VEYRA player source.
+
+The player must receive a real stream URL from the MovieBox API.
+
+The known API architecture includes:
+
+/api/stream
+
+with parameters involving:
+
+subjectId
+detailPath
+quality
+season
+episode
+
+Read the actual implementation before wiring it.
+
+The final flow should be:
+
+User taps Watch Now
+↓
+VEYRA resolves content identifiers
+↓
+VEYRA requests stream metadata
+↓
+MovieBox API resolves the media
+↓
+proxy/stable stream URL returned
+↓
+VEYRA HTML5/media player loads the URL
+↓
+actual playback
+
+DO NOT:
+
+- use local poster images as fake video
+- simulate playback with a timer
+- display a fake progress bar
+- hardcode sample MP4 files
+- redirect the user to another website
+- open a random external video page
+- pretend a request succeeded when no stream URL exists
+
+The player should use an actual media source.
+
+---
+
+13. RANGE REQUESTS AND SEEKING
+
+Because this is a streaming application, verify that the backend/proxy supports:
+
+Range
+Content-Range
+Accept-Ranges
+206 Partial Content
+Content-Length
+Content-Type
+
+where appropriate.
+
+Seeking should actually seek inside the media.
+
+The user must be able to:
+
+play
+pause
+seek
+rewind
+fast-forward
+resume
+
+without the UI merely pretending.
+
+Test playback on Android, not only in desktop Chrome.
+
+---
+
+14. QUALITY SELECTION
+
+Use the API's real quality support.
+
+Expected VEYRA options may include:
+
+Auto
+1080p
+720p
+480p
+360p
+
+but do not show an option that the API cannot provide.
+
+The quality selector must:
+
+open
+show supported qualities
+request selected quality
+reload/switch source safely
+preserve playback position where possible
+
+Do not fake quality switching.
+
+---
+
+15. SUBTITLES
+
+Use the MovieBox subtitle endpoint if supported by the repository:
+
+/api/subtitles
+
+Inspect the actual response format.
+
+Integrate subtitle tracks into the player.
+
+Support:
+
+Off
+English
+Spanish
+French
+Arabic
+
+only where those tracks actually exist.
+
+Do not fabricate subtitle availability.
+
+If the API returns WebVTT/SRT or another format, implement the necessary conversion/parsing cleanly.
+
+---
+
+16. DOWNLOADS
+
+Replace fake download behavior.
+
+The API repository includes download/proxy-related behavior and:
+
+/api/media
+/api/proxy-download
+
+and helper functionality related to download URLs.
+
+Deeply inspect this implementation.
+
+The final architecture should be:
+
+User selects Download
+↓
+VEYRA requests media/download information
+↓
+API returns an authorized/available downloadable media URL
+↓
+Android download layer receives it
+↓
+Download actually occurs
+↓
+Progress is real
+↓
+Completed file is accessible to the app
+
+Do not display fake:
+
+0%
+25%
+50%
+100%
+
+progress.
+
+Progress must be based on actual bytes transferred where supported.
+
+Support:
+
+- start
+- progress
+- pause where technically supported
+- resume where technically supported
+- cancel
+- delete
+- retry
+- completed state
+- failed state
+- storage information
+
+Use Android/Capacitor-compatible filesystem/download mechanisms appropriate to the existing architecture.
+
+Do not try to force browser-only download behavior into an Android APK.
+
+---
+
+17. IMPORTANT DOWNLOAD SAFETY/LEGAL BOUNDARY
+
+Only consume and expose media URLs actually returned by the configured API/service.
+
+Do not implement:
+
+- DRM bypass
+- paywall bypass
+- access-control bypass
+- credential theft
+- unauthorized source extraction
+- circumvention of protected playback
+
+The implementation should use the MovieBox API exactly as provided and only where its use is authorized.
+
+---
+
+18. WATCH PROGRESS
+
+The existing player must produce real progress data.
+
+On playback:
+
+currentTime
+duration
+progress percentage
+last watched position
+
+must be available.
+
+Persist progress using the application's existing persistence/backend architecture.
+
+At minimum support:
+
+content ID
+season
+episode
+position
+duration
+updatedAt
+completed
+
+For series, progress must be episode-specific.
+
+Example:
+
+Show
+  S01E01 → 100%
+  S01E02 → 47%
+  S01E03 → 0%
+
+Do not overwrite all episodes with one global progress value.
+
+---
+
+19. CONTINUE WATCHING
+
+Connect the real watch progress to:
+
+Continue Watching
+
+The rail should reflect what the user actually watched.
+
+Example:
+
+S02E06
+23 minutes left
+47% watched
+
+Do not use demo progress.
+
+When the user taps the item:
+
+resume at saved position
+
+not from zero.
+
+---
+
+20. WATCH HISTORY
+
+History must update based on actual viewing.
+
+Store:
+
+- content
+- type
+- season
+- episode
+- watch position
+- completion
+- last watched timestamp
+
+History should display the most recently watched real content.
+
+---
+
+21. MY LIST
+
+My List should be independent from MovieBox catalog storage.
+
+Store the user's saved item references.
+
+Persist enough information to reopen the item later even if the catalog changes.
+
+Suggested fields:
+
+userId
+provider
+providerItemId
+detailPath
+contentType
+title
+poster
+backdrop
+savedAt
+
+Do not duplicate the entire external catalog unnecessarily.
+
+---
+
+22. RECOMMENDATIONS
+
+Where the MovieBox API provides recommendation endpoints, connect them.
+
+The repository contains:
+
+/api/recommendations
+
+Use it for real recommendations.
+
+Do not keep hardcoded “Because You Watched...” data.
+
+If the API cannot produce a recommendation in a particular situation, show a legitimate empty/fallback state rather than fake titles.
+
+---
+
+23. API ERROR HANDLING
+
+Every MovieBox request must handle:
+
+network unavailable
+timeout
+4xx
+5xx
+invalid parameters
+missing content
+missing stream
+empty results
+rate limits
+malformed response
+
+Create a consistent service error model.
+
+The UI should display useful states:
+
+Unable to load this title.
+Try Again
+
+not:
+
+undefined
+Cannot read properties of undefined
+
+Do not silently swallow API failures and render fake data.
+
+---
+
+24. CACHING
+
+Use reasonable caching for metadata where appropriate.
+
+Do not aggressively cache streaming URLs forever.
+
+Differentiate:
+
+metadata cache
+search cache
+image cache
+stream URL
+download URL
+
+Streaming URLs may expire.
+
+When an expired media URL fails, request a fresh one.
+
+---
+
+25. IMAGE HANDLING
+
+Use the actual poster/backdrop URLs returned by the API.
+
+Preserve VEYRA's existing visual hierarchy.
+
+Implement:
+
+- image loading
+- placeholder
+- error fallback
+- aspect-ratio protection
+- lazy loading where appropriate
+
+Do not break the existing cinematic UI simply because the image source is now remote.
+
+---
+
+26. PLAYER ARCHITECTURE
+
+Inspect the current player implementation.
+
+If it is currently a simulated player, replace the simulation with a real media player while preserving the VEYRA player UI.
+
+Keep:
+
+back
+play/pause
+timeline
+time
+-10 seconds
++10 seconds
+quality
+subtitles
+episodes
+fullscreen
+
+where technically supported.
+
+Controls should fade away naturally while playing.
+
+Playback state must be derived from the actual media element/player, not manually invented React state.
+
+---
+
+27. FULLSCREEN AND ANDROID BEHAVIOR
+
+Verify:
+
+- fullscreen
+- orientation
+- Android back button
+- lock-screen interruption
+- app backgrounding
+- returning to the app
+- network loss during playback
+- screen rotation
+- media position recovery
+
+Do not assume browser behavior is identical inside Capacitor Android.
+
+---
+
+28. OFFLINE BEHAVIOR
+
+The app should distinguish:
+
+ONLINE
+OFFLINE
+DOWNLOAD AVAILABLE
+STREAM UNAVAILABLE
+
+When offline:
+
+You're offline.
+Your downloaded movies are still available.
+
+Downloaded media must not depend on the MovieBox API being reachable for ordinary playback.
+
+---
+
+29. REMOVE FAKE DOWNLOADS
+
+Search for any UI behavior resembling:
+
+download progress simulation
+fake timeout
+setInterval download
+fake completed state
+fake file path
+demo download
+
+Remove it.
+
+There must be one download state machine driven by actual download behavior.
+
+---
+
+30. REMOVE FAKE PLAYER
+
+Search for:
+
+setInterval
+setTimeout
+fake duration
+fake currentTime
+mock video URL
+poster-as-video
+simulated timeline
+
+specifically inside the existing player implementation.
+
+Remove the simulated playback implementation.
+
+---
+
+31. DO NOT BREAK THE EXISTING VEYRA DESIGN
+
+The UI is already built.
+
+Do not redesign:
+
+- branding
+- layout
+- color palette
+- navigation
+- cards
+- typography
+- major screen structure
+
+unless a technical change absolutely requires it.
+
+Current VEYRA visual language:
+
+#080808
+#111111
+#181818
+#FFFFFF
+#A1A1AA
+#E5093F
+
+The app should continue feeling cinematic and premium.
+
+Backend integration should disappear into the product rather than visually announcing itself like a government database.
+
+---
+
+32. DO NOT CREATE A SECOND FRONTEND
+
+Do not build a parallel VEYRA app.
+
+Do not create:
+
+new React app
+new demo app
+new navigation system
+duplicate player
+duplicate search screen
+
+Modify the existing application.
+
+---
+
+33. KEEP MOVIEBOX LOGIC OUT OF UI COMPONENTS
+
+Bad:
+
+fetch("/api/search?...") // inside MovieCard
+
+Good:
+
+SearchScreen
+↓
+veyraContentService.search()
+↓
+movieboxClient.search()
+↓
+MovieBox API
+
+Components should consume normalized VEYRA models.
+
+---
+
+34. NORMALIZED CONTENT MODEL
+
+Create a stable internal model so the UI does not become dependent on random MovieBox response structures.
+
+Example conceptual models:
+
+Content
+Movie
+Series
+Episode
+Season
+Stream
+SubtitleTrack
+Download
+SearchResult
+Recommendation
+
+Include provider-specific identifiers where necessary:
+
+provider
+providerItemId
+detailPath
+
+Do not lose those values when navigating between screens.
+
+---
+
+35. ENVIRONMENT VARIABLES
+
+Create or update documentation for every required variable.
+
+Example:
+
+VITE_MOVIEBOX_API_BASE_URL=
+
+MovieBox server-side variables must remain on the API server.
+
+Do not put sensitive server secrets into:
+
+VITE_*
+
+or Android source code.
+
+Provide:
+
+.env.example
+
+with safe placeholders.
+
+---
+
+36. CORS
+
+Verify the deployed MovieBox API permits the required VEYRA origins.
+
+Support:
+
+local development
+preview
+production
+Android WebView/Capacitor
+
+Do not solve CORS by setting:
+
+Access-Control-Allow-Origin: *
+
+blindly if credentials or sensitive server behavior are involved.
+
+Configure it intentionally based on the actual deployment architecture.
+
+---
+37. API HEALTH CHECK
+
+Add a lightweight way to verify that the MovieBox API is reachable.
+
+If appropriate for the API architecture, provide or use:
+
+GET /health
+
+VEYRA must be able to distinguish between:
+
+API unavailable
+API available but content unavailable
+Content available but stream unavailable
+
+Do not show a generic endless loading screen when the backend is down.
+
+Provide a meaningful error state with Retry.
+
+---
+
+38. TEST THE ACTUAL USER JOURNEY
+
+Do not stop at "the API returned JSON."
+
+Test the complete user flows.
+
+Test 1 — Home
+
+Open VEYRA
+↓
+Home loads
+↓
+Real MovieBox content appears
+↓
+Posters/backdrops load
+↓
+Content rails are populated
+
+Test 2 — Search
+
+Open Search
+↓
+Enter a real title
+↓
+Request MovieBox search
+↓
+Real results appear
+↓
+Open a result
+
+Test 3 — Movie playback
+
+Open movie
+↓
+Real details appear
+↓
+Tap Watch Now
+↓
+Request stream
+↓
+Receive real stream URL
+↓
+Video actually plays
+
+Test 4 — Series playback
+
+Open series
+↓
+Real seasons appear
+↓
+Select season
+↓
+Real episodes appear
+↓
+Select episode
+↓
+Request stream with correct season/episode
+↓
+Video actually plays
+
+Test 5 — Resume
+
+Start playback
+↓
+Watch for a while
+↓
+Leave player
+↓
+Reopen VEYRA
+↓
+Open Continue Watching
+↓
+Resume
+↓
+Playback continues from saved position
+
+Test 6 — Download
+
+Open movie/episode
+↓
+Tap Download
+↓
+Request real download URL
+↓
+Download actually starts
+↓
+Real progress is displayed
+↓
+Download completes
+↓
+Downloaded item appears in Downloads
+
+Test 7 — Offline playback
+
+Download media
+↓
+Disconnect network
+↓
+Open Downloads
+↓
+Select downloaded media
+↓
+Playback works without MovieBox API
+
+Test 8 — API failure
+
+Disable network/API
+↓
+Open Home
+↓
+Error state appears
+↓
+Retry appears
+↓
+Restore network
+↓
+Retry
+↓
+Real content loads
+
+Do not declare success unless these flows have actually been tested.
+
+---
+
+39. TWO-LAYER TESTING
+
+Test both the API and the VEYRA application.
+
+API layer
+
+Verify the MovieBox API endpoints independently:
+
+/api/homepage
+/api/hot-movies-series
+/api/search
+/api/search-suggestions
+/api/search-suggestion
+/api/trending
+/api/popular-searches
+/api/recommendations
+/api/item-details
+/api/media
+/api/stream
+/api/subtitles
+/api/proxy
+/api/proxy-download
+/api/mirror-hosts
+
+Only use endpoints that are actually implemented and appropriate for the corresponding VEYRA feature.
+
+Verify:
+
+- HTTP status
+- response structure
+- required parameters
+- missing parameters
+- invalid IDs
+- invalid season/episode
+- unavailable media
+- unavailable stream
+- network failure
+- timeout
+- malformed response
+
+VEYRA layer
+
+Then verify:
+
+API connection
+↓
+service layer
+↓
+data transformation
+↓
+screen
+↓
+user interaction
+
+A successful API request alone does not mean VEYRA integration works.
+
+A successful frontend build alone does not mean streaming works.
+
+---
+
+40. PERFORMANCE
+
+VEYRA is a mobile streaming application.
+
+Optimize the integration for mobile devices and lower-end Android hardware.
+
+Avoid:
+
+- unnecessary duplicate API requests
+- repeated requests for the same content
+- downloading unnecessarily large metadata payloads
+- requesting streams repeatedly
+- rendering huge numbers of posters simultaneously
+- loading every image at once
+- excessive React re-renders
+- retaining stale video URLs
+- memory-heavy image processing
+
+Use appropriate:
+
+lazy loading
+debouncing
+request cancellation
+memoization where useful
+pagination/incremental loading where supported
+metadata caching
+
+Do not introduce unnecessary complexity.
+
+The goal is a fast, stable mobile streaming experience.
+
+---
+
+41. ANDROID COMPATIBILITY
+
+VEYRA is packaged as an Android application using Capacitor.
+
+Do not treat the web version as the final product.
+
+Verify the actual Android build.
+
+Run the project's appropriate build process, including:
+
+npm install
+npm run build
+npx cap sync android
+cd android
+./gradlew assembleDebug
+
+Use the project's actual scripts if they differ.
+
+Verify the APK can:
+
+- connect to the MovieBox API
+- load images
+- search
+- open details
+- play streams
+- seek
+- change quality where supported
+- load subtitles where supported
+- start downloads
+- show download progress
+- access downloaded media
+- survive Android app backgrounding
+- handle Android back navigation
+- handle orientation/fullscreen behavior
+
+Do not consider the implementation complete merely because:
+
+npm run build
+
+passes.
+
+The Android application must also build successfully.
+
+---
+
+42. REMOVE UNUSED MOCK ASSETS
+
+After real API integration is working, identify assets that existed only to support the fake/demo catalog.
+
+Remove unnecessary:
+
+fake poster catalog
+fake episode assets
+sample media
+demo video assets
+fake download artifacts
+mock catalog JSON
+
+Do NOT remove:
+
+VEYRA logo
+VEYRA icon
+branding
+real UI assets
+required application assets
+
+Only remove assets that are genuinely obsolete.
+
+---
+
+43. CLEAN UP DEAD CODE
+
+After replacing the mock implementation, search the entire project for obsolete code.
+
+Look for:
+
+unused imports
+mock functions
+fake services
+demo data
+fake API adapters
+dead state
+unused localStorage keys
+duplicate fetch implementations
+unused components
+fake player timers
+fake download timers
+
+Remove dead code where safe.
+
+Do not leave two competing implementations.
+
+There should be one real production path.
+
+---
+
+44. LOGGING
+
+Add useful development diagnostics around the API integration.
+
+Use clear categories such as:
+
+[VEYRA API]
+[VEYRA SEARCH]
+[VEYRA DETAILS]
+[VEYRA STREAM]
+[VEYRA DOWNLOAD]
+[VEYRA PLAYER]
+
+Log enough information to diagnose failures.
+
+Do NOT log:
+
+API secrets
+private credentials
+authentication tokens
+sensitive user information
+unnecessary private URLs
+
+Production logs should be appropriately reduced.
+
+---
+
+45. DOCUMENT THE FINAL ARCHITECTURE
+
+Create documentation explaining the final system.
+
+At minimum document:
+
+VEYRA frontend
+        ↓
+VEYRA MovieBox service layer
+        ↓
+MovieBox API
+        ↓
+MovieBox upstream
+        ↓
+media/proxy layer
+        ↓
+stream/download
+        ↓
+VEYRA player / Android download system
+
+Document:
+
+- API deployment
+- API base URL
+- environment variables
+- endpoint mapping
+- content models
+- stream flow
+- download flow
+- subtitle flow
+- progress flow
+- history flow
+- My List flow
+- error handling
+- Android behavior
+- local development
+- production deployment
+
+Also explain how another developer can run the complete system locally.
+
+---
+
+46. REQUIRED MOVIEBOX ENDPOINT MAPPING
+
+Deeply inspect and correctly map the MovieBox API endpoints.
+
+The repository currently exposes or references endpoints including:
+
+/api/homepage
+/api/hot-movies-series
+/api/search
+/api/search-suggestions
+/api/search-suggestion
+/api/trending
+/api/popular-searches
+/api/recommendations
+/api/item-details
+/api/media
+/api/stream
+/api/subtitles
+/api/proxy
+/api/proxy-download
+/api/mirror-hosts
+
+Do not blindly call every endpoint.
+
+Map each endpoint to the feature that actually needs it.
+
+Example:
+
+Home
+→ /api/homepage
+→ /api/trending
+→ /api/hot-movies-series
+
+Search
+→ /api/search
+→ /api/search-suggestions
+
+Details
+→ /api/item-details
+
+Media
+→ /api/media
+
+Playback
+→ /api/stream
+
+Subtitles
+→ /api/subtitles
+
+Recommendations
+→ /api/recommendations
+
+Downloads
+→ /api/media
+→ /api/proxy-download
+
+The exact mapping must follow the actual implementation inside:
+
+lib/moviebox-client.ts
+lib/proxy-helper.ts
+
+Do not invent parameters or response structures.
+
+---
+
+47. MEDIA-FIRST PRIORITY
+
+Implement in this order:
+
+1. MovieBox API deployment/reachability
+2. Home/catalog
+3. Search
+4. Movie details
+5. Series details
+6. Seasons/episodes
+7. Stream resolution
+8. Real player
+9. Playback controls
+10. Watch progress
+11. Resume/Continue Watching
+12. Subtitles
+13. Downloads
+14. Offline playback
+15. History
+16. My List
+17. Recommendations
+18. Error handling
+19. Performance
+20. Android verification
+21. Cleanup
+22. Production verification
+
+Do not spend most of the implementation time redesigning screens that already exist while the player is still fake.
+
+---
+
+48. DO NOT MAKE UP SUCCESS
+
+This is mandatory.
+
+Do NOT report:
+
+Streaming works
+
+unless a real media source was fetched and actual playback was verified.
+
+Do NOT report:
+
+Downloads work
+
+unless actual media bytes were downloaded.
+
+Do NOT report:
+
+Search works
+
+unless real MovieBox search results were returned.
+
+Do NOT report:
+
+Backend connected
+
+just because an environment variable exists.
+
+Do NOT report:
+
+Android ready
+
+unless the Android build actually succeeds.
+
+Test the actual behavior.
+
+If something cannot be verified, explicitly report:
+
+NOT VERIFIED
+
+instead of pretending it works.
+
+---
+
+49. DEEP-DIVE REFERENCES
+
+Before implementing, inspect these sources thoroughly.
+
+VEYRA
+
+Repository:
+
+https://github.com/macaulay-spec/Arena-veyra
+
+Branch:
+
+https://github.com/macaulay-spec/Arena-veyra/tree/arena/06675f17-arena-veyra
+
+Main application:
+
+https://github.com/macaulay-spec/Arena-veyra/blob/arena/06675f17-arena-veyra/src/App.jsx
+
+Components:
+
+https://github.com/macaulay-spec/Arena-veyra/blob/arena/06675f17-arena-veyra/src/components.jsx
+
+Current data layer:
+
+https://github.com/macaulay-spec/Arena-veyra/blob/arena/06675f17-arena-veyra/src/data.js
+
+Styles:
+
+https://github.com/macaulay-spec/Arena-veyra/blob/arena/06675f17-arena-veyra/src/styles.css
+
+Package configuration:
+
+https://github.com/macaulay-spec/Arena-veyra/blob/arena/06675f17-arena-veyra/package.json
+
+Android workflow:
+
+https://github.com/macaulay-spec/Arena-veyra/blob/arena/06675f17-arena-veyra/.github/workflows/android-apk.yml
+
+MOVIEBOX API
+
+Exact repository:
+
+https://github.com/Godszeal/movieboxapi
+
+Main branch:
+
+https://github.com/Godszeal/movieboxapi/tree/main
+
+README:
+
+https://github.com/Godszeal/movieboxapi/blob/main/README.md
+
+MovieBox client:
+
+https://github.com/Godszeal/movieboxapi/blob/main/lib/moviebox-client.ts
+
+Proxy helper:
+
+https://github.com/Godszeal/movieboxapi/blob/main/lib/proxy-helper.ts
+
+TECHNOLOGY REFERENCES
+
+Capacitor:
+
+https://capacitorjs.com/docs
+
+Capacitor Android:
+
+https://capacitorjs.com/docs/android
+
+HTMLMediaElement:
+
+https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
+
+HTTP Range Requests:
+
+https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Range_requests
+
+Vite Environment Variables:
+
+https://vite.dev/guide/env-and-mode
+
+GitHub Actions:
+
+https://docs.github.com/en/actions
+
+---
+
+50. FINAL DEFINITION OF DONE
+
+VEYRA is NOT considered complete until all applicable requirements below are verified.
+
+[ ] Existing VEYRA UI preserved
+[ ] Mock catalog removed
+[ ] Mock search removed
+[ ] Mock details removed
+[ ] Mock episodes removed
+[ ] Mock player removed
+[ ] Mock playback timer removed
+[ ] Mock progress removed
+[ ] Mock download simulation removed
+[ ] MovieBox API deployed/reachable
+[ ] Production API URL configured
+[ ] Home uses real MovieBox data
+[ ] Search uses real MovieBox data
+[ ] Search suggestions work where supported
+[ ] Movie details use real data
+[ ] Series details use real data
+[ ] Real seasons load
+[ ] Real episodes load
+[ ] Correct season/episode parameters are used
+[ ] Real stream URLs resolve
+[ ] Real video playback works
+[ ] Pause works
+[ ] Seek works
+[ ] Rewind works
+[ ] Fast-forward works
+[ ] Fullscreen works where supported
+[ ] Quality selection works where supported
+[ ] Subtitles work where supported
+[ ] Stream errors are handled
+[ ] Watch progress is real
+[ ] Continue Watching uses real progress
+[ ] Resume starts from the saved position
+[ ] Watch history uses real viewing data
+[ ] My List persists real content references
+[ ] Recommendations use real API data where supported
+[ ] Download requests use real media
+[ ] Download progress is real
+[ ] Download completion is real
+[ ] Download failure is handled
+[ ] Download deletion works
+[ ] Offline downloaded playback works
+[ ] API failure states work
+[ ] Retry works
+[ ] Network loss is handled
+[ ] Android build succeeds
+[ ] Android playback verified
+[ ] Android download verified
+[ ] Environment variables documented
+[ ] No client-side secrets exposed
+[ ] No fake fallback catalog remains in production paths
+[ ] No duplicate backend implementation remains
+[ ] No unnecessary redesign introduced
+[ ] Full end-to-end streaming flow verified
+
+---
+
+FINAL REPORT REQUIRED
+
+When implementation is complete, provide a technical completion report containing:
+
+1. Files changed
+
+List every modified/created file.
+
+2. MovieBox API
+
+State:
+
+API repository:
+Deployment:
+Production URL:
+Health status:
+
+3. VEYRA configuration
+
+List required environment variables.
+
+Do not expose secret values.
+
+4. Endpoint mapping
+
+Show:
+
+VEYRA feature → MovieBox endpoint
+
+5. Streaming
+
+Explain the complete flow:
+
+User
+→ VEYRA
+→ MovieBox API
+→ stream resolution
+→ proxy/media URL
+→ player
+
+6. Downloads
+
+Explain:
+
+User
+→ download request
+→ API
+→ media/download URL
+→ Android downloader
+→ local file
+→ offline playback
+
+7. Subtitles
+
+Explain how subtitle tracks are retrieved and attached to playback.
+
+8. Progress
+
+Explain how:
+
+current position
+duration
+completion
+history
+resume
+Continue Watching
+
+are handled.
+
+9. Testing
+
+Report actual test results.
+
+Use:
+
+PASS
+FAIL
+NOT VERIFIED
+
+Do not hide failures.
+
+10. Android
+
+Report:
+
+Web build:
+Capacitor sync:
+Android Gradle build:
+APK:
+Real device verification:
+
+11. Remaining limitations
+
+List anything genuinely unresolved.
+
+12. Git state
+
+Report:
+
+Branch:
+Commit:
+Changed files:
+
+The final response must contain evidence of actual implementation and verification rather than simply saying:
+
+"MovieBox integration complete."
+
+The objective is a real VEYRA streaming application, not another beautifully decorated mockup.
