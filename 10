@@ -1,0 +1,2632 @@
+VEYRA 10/10 UI/UX IMPROVEMENT + PRODUCT POLISH MASTER PROMPT
+
+You are working on the existing VEYRA streaming application.
+
+Repository:
+"macaulay-spec/Arena-veyra"
+
+Branch:
+"arena/06675f17-arena-veyra"
+
+Your job is to take the EXISTING VEYRA application from its current state to a genuinely production-quality 10/10 streaming product experience.
+
+Do NOT redesign VEYRA from scratch.
+
+Do NOT replace the existing visual identity.
+
+Do NOT create a static mockup.
+
+Do NOT only make CSS changes.
+
+You must inspect the existing implementation, understand how the screens currently work, then improve the actual application code, UX behavior, content architecture, responsiveness, accessibility, Android behavior, TV behavior, loading/error/offline states, and visual polish.
+
+The final result must feel like a real premium streaming application, not an AI-generated template, developer demo, API test client, or collection of disconnected screens.
+
+---
+
+1. CORE VEYRA IDENTITY
+
+Preserve the existing VEYRA identity.
+
+Brand:
+VEYRA
+
+Tagline:
+"Watch what moves you."
+
+Product concept:
+
+«A private cinema that lives inside your phone and TV.»
+
+Visual direction:
+
+- cinematic
+- premium
+- restrained
+- modern
+- editorial
+- dark
+- immersive
+- confident
+- minimal
+- content-first
+
+Primary background:
+"#080808"
+
+Secondary surfaces:
+"#101010"
+"#171717"
+"#202020"
+
+Primary text:
+"#F5F5F5"
+
+Secondary text:
+"#A1A1AA"
+
+Muted text:
+"#71717A"
+
+Accent:
+"#E5093F"
+
+Typography should remain close to the current Inter / SF Pro / Manrope direction.
+
+DO NOT introduce:
+
+- purple AI aesthetics
+- neon cyberpunk styling
+- excessive gradients
+- excessive glassmorphism
+- giant red surfaces
+- generic Netflix cloning
+- excessive cards
+- unnecessary borders
+- noisy shadows
+- excessive rounded containers
+- unnecessary decorative UI
+- giant typography everywhere
+- excessive animations
+
+VEYRA should feel expensive because of hierarchy, spacing, typography, imagery, interaction and restraint.
+
+---
+
+2. FIRST: AUDIT THE EXISTING CODE
+
+Before modifying anything:
+
+Inspect the current branch thoroughly.
+
+At minimum inspect:
+
+- "src/App.jsx"
+- "src/components.jsx"
+- "src/data.js"
+- "src/styles.css"
+- "src/main.jsx"
+- "src/services/moviebox/client.js"
+- "src/services/moviebox/normalize.js"
+- all MovieBox tests
+- "android/"
+- "capacitor.config.json"
+- "package.json"
+- "README.md"
+- "UI/UX BUILD"
+- existing public assets
+
+Understand the current navigation architecture.
+
+Understand which screens are already implemented.
+
+Understand which screens are visually implemented but functionally incomplete.
+
+Understand which state is mocked.
+
+Do not delete working functionality simply because it is imperfect.
+
+Improve it.
+
+---
+
+3. CRITICAL PRODUCT RULE
+
+The user must NEVER see internal implementation details.
+
+Remove all consumer-facing language mentioning:
+
+- API
+- API provider
+- MovieBox
+- upstream
+- proxy
+- endpoint
+- credentials
+- API key
+- provider
+- catalog service
+- backend configuration
+- client-side credentials
+- missing endpoint
+- authorization configuration
+- environment variables
+- developer configuration
+- technical response structure
+
+Technical failures belong in logs.
+
+Users should see human-readable product language.
+
+Examples:
+
+BAD:
+
+"MovieBox API is not configured."
+
+GOOD:
+
+"We couldn't load this right now."
+
+BAD:
+
+"The API responded, but returned no titles with the identifiers and fields VEYRA needs."
+
+GOOD:
+
+"Nothing to show right now."
+
+BAD:
+
+"Downloads are disabled until an authorized media provider is configured."
+
+GOOD:
+
+"Downloads aren't available right now."
+
+BAD:
+
+"No account service is connected."
+
+GOOD:
+
+"Sign in to keep your library synced across devices."
+
+Never expose the machinery underneath the product.
+
+---
+
+4. HOME SCREEN
+
+Home must feel like the primary destination of a streaming service.
+
+Structure:
+
+Hero
+
+Use a real featured-content system.
+
+Do NOT leave a fake one-dot carousel.
+
+Implement:
+
+- 3–5 featured titles when content is available
+- swipe on mobile
+- arrow controls on desktop
+- D-pad left/right on TV
+- active pagination indicator
+- smooth artwork transition
+- title transition
+- metadata transition
+- Watch action
+- My List action
+- contextual Resume action when applicable
+
+Hero hierarchy:
+
+1. artwork
+2. title
+3. short description
+4. metadata
+5. primary Watch/Resume action
+6. secondary My List action
+
+The hero should never feel overloaded.
+
+If only one featured title exists, do not display meaningless carousel dots.
+
+---
+
+5. HOME CONTENT ARCHITECTURE
+
+Do not simply render raw API sections one after another.
+
+Home must have editorial hierarchy.
+
+Preferred structure:
+
+1. Featured
+2. Continue Watching, only when relevant
+3. Trending Now
+4. Popular Movies
+5. Popular Series
+6. New & Noteworthy
+7. Recommendations / More Like This
+8. Optional curated collection
+
+Each rail must have a reason to exist.
+
+Do not create redundant rails.
+
+Do not show empty rails.
+
+If a section has no content, hide it rather than displaying an embarrassing empty rectangle.
+
+---
+
+6. CONTINUE WATCHING
+
+If playback/history data exists:
+
+Show:
+
+- poster/backdrop
+- title
+- episode information when relevant
+- progress bar
+- remaining time where useful
+- Resume action
+
+Examples:
+
+"Resume"
+
+"Resume S02:E04"
+
+Do NOT always say "Watch Now" when the user has already started something.
+
+Tapping a Continue Watching item should resume playback at the stored position.
+
+---
+
+7. DISCOVER MUST BE DIFFERENT FROM HOME
+
+Do not make Discover another copy of Home.
+
+Home answers:
+
+«What should I watch?»
+
+Discover answers:
+
+«What can I explore?»
+
+Build Discover around:
+
+- Everything
+- Movies
+- Series
+- Trending
+- Popular
+- New Releases
+- Top Rated, if supported
+- Genres
+- Curated collections
+
+Use a clean exploration hierarchy.
+
+Genre chips should be useful, not decorative.
+
+Poster grids should be optimized for browsing.
+
+Do not duplicate the exact same content in the exact same order everywhere.
+
+---
+
+8. SEARCH
+
+Search must be honest about what it supports.
+
+If the current backend only supports movie/series searching, use:
+
+"Search movies and series"
+
+Do not promise:
+
+"Search movies, series, people..."
+
+unless people search actually works.
+
+Implement:
+
+- search input
+- debounced search
+- search suggestions
+- recent searches
+- clear search
+- loading state
+- no-results state
+- result count if useful
+- Movies/Series filtering if supported
+- keyboard submit
+- Android keyboard handling
+
+Search should feel instant.
+
+Do not flash unnecessary loading screens for tiny delays.
+
+---
+
+9. SEARCH EMPTY STATES
+
+Avoid generic developer wording.
+
+Good:
+
+"Find something worth watching."
+
+"Search for a title."
+
+"No results for “Batman”."
+
+"Try a different title or genre."
+
+Keep empty states short.
+
+---
+
+10. DETAILS SCREEN
+
+The Details screen must become one of the strongest screens in VEYRA.
+
+Hierarchy:
+
+1. backdrop/poster
+2. title
+3. metadata
+4. synopsis
+5. primary Watch/Resume action
+6. My List
+7. Download
+8. Episodes where relevant
+9. About
+10. Cast & Crew where available
+11. More Like This
+
+Primary action must be contextual.
+
+New:
+
+"Watch now"
+
+Previously started:
+
+"Resume"
+
+Series:
+
+"Resume S02:E04"
+
+Never show a technical playback failure as the main CTA.
+
+---
+
+11. DETAILS ACTIONS
+
+Use correct icons.
+
+Share must use an actual share icon.
+
+Implement native sharing where supported.
+
+Fallback:
+
+- copy share link
+- show confirmation toast
+
+Do not use arbitrary icons that vaguely resemble the action.
+
+"More title information" should either open more information or simply be renamed "About".
+
+Do not label a scroll-to-section button as if it opens another page.
+
+---
+
+12. EPISODES
+
+For series:
+
+Show:
+
+- season selector
+- episode list
+- episode number
+- title
+- duration when available
+- synopsis when useful
+- watched/progress indicator
+- current episode state
+- Resume action
+
+Episode rows must be easily tappable.
+
+On TV they must be D-pad reachable.
+
+---
+
+13. PLAYER
+
+The player is a core VEYRA experience.
+
+When real media becomes available, implement a proper streaming player.
+
+Required behavior:
+
+- play
+- pause
+- seek
+- progress bar
+- volume where applicable
+- fullscreen
+- quality
+- subtitles
+- audio if available
+- episode selector for series
+- next episode
+- previous episode where appropriate
+- resume position
+- loading state
+- buffering state
+- playback error recovery
+- retry
+- orientation handling
+- Android back behavior
+
+Player controls should appear when the user interacts.
+
+Controls should disappear after inactivity.
+
+Do not permanently cover the video with controls.
+
+Player hierarchy:
+
+VIDEO
+
+top:
+Back / title / episode context
+
+center:
+Play/pause
+seek controls
+
+bottom:
+progress
+time
+quality
+subtitles
+episodes
+fullscreen
+
+Keep controls visually restrained.
+
+---
+
+14. RESUME PLAYBACK
+
+Persist playback progress locally.
+
+When reopening a title:
+
+Resume from the last meaningful position.
+
+Do not ask the user to confirm every time.
+
+Do not save tiny accidental playback positions.
+
+Update progress periodically.
+
+When playback finishes, clear or complete the progress state appropriately.
+
+---
+
+15. NEXT EPISODE
+
+For series:
+
+When an episode approaches completion:
+
+Show a subtle:
+
+"Next episode"
+
+card.
+
+Allow:
+
+- play next
+- dismiss
+
+Do not interrupt the final moments aggressively.
+
+---
+
+16. MY LIST
+
+My List should behave like an actual library.
+
+Support:
+
+- add
+- remove
+- persistent state
+- visual saved state
+- empty state
+- sorting/filtering if appropriate
+
+Empty state:
+
+"Your list is empty."
+
+"Save something you want to watch later."
+
+Do not show technical explanations.
+
+---
+
+17. HISTORY
+
+FIX THE CURRENT HISTORY UX.
+
+Current behavior must NOT remove an item when its artwork is tapped.
+
+Correct behavior:
+
+Poster tap:
+Open/resume title.
+
+Explicit remove button:
+Remove history item.
+
+History must persist across app restarts.
+
+Load saved history during application startup.
+
+Do not initialize history as permanently empty if saved history exists.
+
+History should show:
+
+- title
+- poster
+- date/recentness where useful
+- progress where applicable
+
+---
+
+18. OFFLINE MODE
+
+Offline is a STATE, not a separate universe.
+
+Do NOT automatically throw the user into a completely different offline page every time connectivity disappears.
+
+Instead:
+
+Keep the current screen.
+
+Display a subtle offline banner:
+
+"You're offline."
+
+Allow cached/local functionality.
+
+Disable network-only actions gracefully.
+
+Keep available:
+
+- My List
+- History
+- Downloads
+- Settings
+- cached metadata
+
+Downloads should remain accessible offline.
+
+---
+
+19. DOWNLOADS
+
+Create a real download UX.
+
+Downloading:
+
+Title
+1080p · 1.4 GB
+
+Progress bar
+
+72%
+
+Pause
+Cancel
+
+Downloaded:
+
+Title
+720p · 846 MB
+
+"Available offline"
+
+Include storage information:
+
+"12.4 GB used"
+
+"64 GB available"
+
+Do not mention API configuration.
+
+Do not display technical media-provider information.
+
+---
+
+20. PROFILE
+
+Profile identity must be consistent everywhere.
+
+If guest:
+
+"Guest"
+
+with the same avatar/initial everywhere.
+
+If authenticated:
+
+Use the authenticated user's name/avatar consistently.
+
+Do not show one identity in the header and another on the profile screen.
+
+---
+
+21. AUTHENTICATION
+
+Implement the missing authentication experience if the existing architecture supports it.
+
+Screens:
+
+Welcome
+
+VEYRA
+
+Watch what moves you.
+
+Get started
+
+Already have an account?
+Sign in
+
+Sign in
+
+Email
+
+Password
+
+Sign in
+
+Forgot password?
+
+Create account
+
+Sign up
+
+Name
+
+Email
+
+Password
+
+Create account
+
+Already have an account?
+
+Forgot password
+
+Email
+
+Send reset link
+
+Keep these screens cinematic and minimal.
+
+Do not over-design forms.
+
+---
+
+22. SETTINGS
+
+Settings must only expose controls that actually work.
+
+If Appearance exists:
+
+Implement:
+
+- Dark
+- System
+- Light, if supported
+
+If Light mode is not ready, do not pretend it is.
+
+Settings categories:
+
+Account
+Playback
+Appearance
+Notifications
+Downloads
+Storage
+Devices
+About
+
+Use clear section hierarchy.
+
+---
+
+23. MOBILE NAVIGATION
+
+Keep the existing four primary destinations where appropriate:
+
+Home
+Search
+My List
+Me
+
+Do NOT overcrowd the bottom navigation.
+
+Do not add every possible screen to the bottom bar.
+
+Bottom navigation should remain visually light.
+
+---
+
+24. ANDROID BACK BUTTON
+
+Implement proper Android navigation behavior.
+
+Expected:
+
+Player → previous screen
+
+Details → previous screen
+
+Search result → Search
+
+Nested screens → parent
+
+Only exit the app when the user is actually at the root.
+
+Never make Android Back feel broken.
+
+---
+
+25. TOUCH TARGETS
+
+Audit every interactive control.
+
+Target approximately 44–48px touch areas wherever practical.
+
+The icon itself can remain visually small.
+
+Increase invisible hit areas rather than making every icon huge.
+
+Pay special attention to:
+
+- back
+- close
+- share
+- download
+- more
+- player controls
+- bottom navigation
+- season selector
+- episode rows
+
+---
+
+26. TYPOGRAPHY
+
+Remove unnecessarily tiny information text.
+
+Do not use 6–7px text for meaningful information.
+
+Recommended hierarchy:
+
+Primary navigation:
+11–13px+
+
+Body:
+12–14px+
+
+Metadata:
+9–11px
+
+Micro labels:
+8–9px maximum
+
+Use typography to create hierarchy rather than adding decorative boxes.
+
+---
+
+27. DESIGN TOKENS
+
+Consolidate repeated colors and spacing.
+
+Create a coherent token system.
+
+Example:
+
+--bg: #080808;
+--surface-1: #101010;
+--surface-2: #171717;
+--surface-3: #202020;
+
+--text: #F5F5F5;
+--muted: #A1A1AA;
+--dim: #71717A;
+
+--accent: #E5093F;
+
+--radius-sm: 8px;
+--radius-md: 12px;
+--radius-lg: 16px;
+
+--space-1: 4px;
+--space-2: 8px;
+--space-3: 12px;
+--space-4: 16px;
+--space-5: 24px;
+--space-6: 32px;
+
+Do not create dozens of almost-identical colors.
+
+---
+
+28. LOADING STATES
+
+Build skeletons that match the actual screen structure.
+
+Home:
+Hero skeleton + poster skeletons
+
+Details:
+Backdrop + title + metadata + action skeletons
+
+Discover:
+Grid skeletons
+
+Episodes:
+Episode-row skeletons
+
+Profile:
+Profile skeleton
+
+Do not use a generic loading row for every screen.
+
+Skeletons should preserve layout while data loads.
+
+---
+
+29. ERROR STATES
+
+Every network-dependent screen needs:
+
+- loading
+- success
+- empty
+- error
+- retry
+- offline
+
+User-facing errors must be human.
+
+Example:
+
+"Something went wrong."
+
+"Try again."
+
+Do not expose:
+
+- API names
+- HTTP status codes
+- stack traces
+- endpoint names
+- provider names
+- environment configuration
+
+Technical details may go to console/logging only.
+
+---
+
+30. EMPTY STATES
+
+Every empty state must have a purpose.
+
+Examples:
+
+My List:
+
+"Your list is empty."
+
+"Save something for later."
+
+History:
+
+"Nothing here yet."
+
+"Watch something and it'll appear here."
+
+Downloads:
+
+"No downloads yet."
+
+"Save something for offline viewing."
+
+Search:
+
+"Find something worth watching."
+
+Avoid giant empty pages.
+
+---
+
+31. MOTION
+
+Motion should communicate relationships.
+
+Use subtle:
+
+- fade
+- slide
+- scale
+- shared artwork transitions
+- content crossfade
+
+Do NOT animate everything.
+
+Avoid:
+
+- bouncing
+- excessive spring animations
+- constant floating
+- unnecessary parallax
+- distracting transitions
+
+The interface should feel cinematic, not like a gaming UI.
+
+---
+
+32. SHARED TRANSITIONS
+
+Where practical:
+
+Card → Details
+
+Details → Player
+
+Episode → Player
+
+Use the artwork/content as the visual continuity.
+
+The user should feel like they moved into the selected title rather than teleported to another screen.
+
+---
+
+33. TV EXPERIENCE
+
+TV is not simply mobile stretched wider.
+
+Implement:
+
+- proper TV sidebar
+- large focus targets
+- strong focus state
+- horizontal rails
+- spatial D-pad navigation
+- predictable up/down navigation between rows
+- left/right navigation within rows
+- focus restoration
+- player controls optimized for remote
+
+Critical:
+
+ArrowRight should move horizontally within the current rail.
+
+ArrowLeft should move horizontally backward.
+
+ArrowDown should move toward the next logical row.
+
+ArrowUp should move toward the previous logical row.
+
+Do NOT use one giant linear focus array.
+
+Every visible interactive element must be reachable.
+
+---
+
+34. TV FOCUS
+
+Focus should be obvious but elegant.
+
+Use:
+
+- subtle crimson outline
+- elevation
+- scale around 1.02–1.04
+- controlled shadow/glow
+
+Do not make focus enormous.
+
+Restore previous focus when returning to a screen where possible.
+
+---
+
+35. RESPONSIVE DESIGN
+
+Audit at:
+
+- small Android phones
+- normal phones
+- large phones
+- tablets
+- desktop
+- TV
+
+Pay special attention to:
+
+- 360px-wide phones
+- 375px
+- 390px
+- 412px+
+- landscape
+- TV 1080p
+- large desktop
+
+Nothing should overflow horizontally.
+
+No clipped buttons.
+
+No microscopic controls.
+
+No giant empty spaces.
+
+---
+
+36. CONTENT COPY
+
+Reduce excessive poetic copy.
+
+Use expressive writing only where it adds atmosphere.
+
+Good places:
+
+Hero
+Onboarding
+Discover introduction
+Empty states
+
+Use straightforward language for:
+
+Settings
+Episodes
+Downloads
+Profile
+Notifications
+Playback
+Library
+
+VEYRA should feel cinematic, not like every menu was written by a perfume company.
+
+---
+
+37. CONTENT METADATA
+
+Cards should remain clean.
+
+Use metadata selectively:
+
+"2026 · Drama"
+
+or:
+
+"8.6 ★ · 2026 · Drama"
+
+or:
+
+"2026 · Series · 2 Seasons"
+
+Do not overload cards with five pieces of metadata.
+
+The artwork remains the primary visual.
+
+---
+
+38. LOGO / BRAND MARK
+
+Refine the existing VEYRA mark without destroying it.
+
+The V/play relationship should remain recognizable at:
+
+24px
+32px
+48px
+
+The logo should not depend entirely on a red square background to be identifiable.
+
+Do not replace the identity with a generic play button.
+
+---
+
+39. ACCESSIBILITY
+
+Audit:
+
+- keyboard navigation
+- Android screen reader labels
+- button labels
+- focus states
+- contrast
+- touch target size
+- reduced motion
+- semantic buttons
+- image alt text where applicable
+
+Decorative artwork should not create noisy screen-reader output.
+
+Interactive icons need accessible labels.
+
+---
+
+40. PERFORMANCE
+
+Do not sacrifice performance for visual polish.
+
+Optimize:
+
+- poster loading
+- image sizes
+- lazy loading
+- component rendering
+- search debounce
+- unnecessary state updates
+- hero transitions
+
+Avoid rendering enormous catalog arrays unnecessarily.
+
+Do not introduce a heavy animation library just to animate three things.
+
+---
+
+41. REAL DATA ARCHITECTURE
+
+Do not reintroduce fake catalog behavior.
+
+The existing MovieBox service layer should remain the abstraction point.
+
+Do not put API keys in:
+
+- React code
+- "VITE_*" variables
+- Android source
+- APK
+- public files
+
+Sensitive provider credentials must remain server-side.
+
+The UI should consume normalized application data, not provider-specific response structures.
+
+Do not spread MovieBox-specific logic throughout "App.jsx".
+
+---
+
+42. MOVIEBOX / MEDIA INTEGRATION
+
+Where the backend contract is ready, support:
+
+Homepage
+Trending
+Hot Movies/Series
+Search
+Suggestions
+Details
+Recommendations
+Media
+Streams
+Subtitles
+Downloads
+
+Playback must resolve fresh media data when required.
+
+Do not permanently cache signed media URLs.
+
+Do not expose provider credentials.
+
+Do not bypass DRM, authentication, access controls, or licensing restrictions.
+
+Only use authorized media delivery.
+
+---
+
+43. PLAYER DATA FLOW
+
+Preferred architecture:
+
+VEYRA UI
+
+↓
+
+VEYRA media service
+
+↓
+
+authorized backend/media service
+
+↓
+
+media metadata
+
+↓
+
+stream resolver
+
+↓
+
+player
+
+The UI should never need to know how the media URL was discovered.
+
+---
+
+44. CONTENT NORMALIZATION
+
+Normalize provider data before rendering.
+
+Components should receive predictable VEYRA objects such as:
+
+{
+  id,
+  title,
+  poster,
+  backdrop,
+  description,
+  year,
+  rating,
+  genres,
+  type,
+  duration,
+  seasons,
+  episodes
+}
+
+Do not make UI components understand raw provider response formats.
+
+---
+
+45. REAL MEDIA + PLAYBACK INTEGRATION
+
+The app must be prepared for real VEYRA playback, not a fake player shell.
+
+The frontend must consume the authorized backend/media layer and never expose provider API keys or private credentials.
+
+Implement the complete media flow:
+
+Home / Search / Discover
+        ↓
+Title Details
+        ↓
+Watch / Resume
+        ↓
+Media Resolver
+        ↓
+Playable Stream
+        ↓
+VEYRA Player
+
+The player must support:
+
+- Play
+- Pause
+- Seek
+- Current time
+- Duration
+- Progress bar
+- Resume position
+- Restart
+- Fullscreen
+- Quality selection
+- Subtitle selection
+- Episode selection
+- Next episode
+- Auto-next
+- Retry after playback failure
+- Loading state
+- Buffering state
+- Playback error state
+- End-of-video state
+- Series episode progression
+- Remembered playback position
+
+Do not show technical provider information to users.
+
+Never display:
+
+- API URL
+- provider name
+- endpoint
+- API key
+- proxy URL
+- raw stream URL
+- backend error
+- HTTP status
+- JSON response
+- developer debugging information
+
+User-facing errors should look like:
+
+«“We couldn’t start playback.”»
+
+with:
+
+«“Try again”»
+
+not:
+
+«“MovieBox API returned 403.”»
+
+---
+
+46. PLAYER EXPERIENCE
+
+The player must feel like a real premium streaming application.
+
+When playback begins:
+
+- controls should initially be visible
+- controls should automatically hide after inactivity
+- tapping the video should reveal/hide controls
+- progress should update smoothly
+- seeking should feel responsive
+- loading should use a cinematic but minimal indicator
+- errors must have retry controls
+- returning from the player must restore the previous screen
+
+Do not build a fake player where buttons merely change visual state.
+
+Every control must either work or not exist.
+
+---
+
+47. RESUME WATCHING
+
+Persist playback progress locally.
+
+Store:
+
+- title ID
+- season
+- episode
+- playback position
+- duration
+- last watched timestamp
+
+On reopening a partially watched title:
+
+Resume S01:E04
+
+should be offered when appropriate.
+
+If playback is nearly finished, do not resume from the last few seconds.
+
+Instead offer:
+
+Watch again
+
+or move the title to completed history.
+
+---
+
+48. SERIES EXPERIENCE
+
+Series must have a proper episode experience.
+
+Details screen should include:
+
+- season selector
+- episode list
+- episode number
+- episode title
+- episode thumbnail when available
+- episode duration when available
+- watched/progress state
+- currently selected episode
+- resume state
+
+Example:
+
+Season 1
+
+01  Pilot
+    48 min
+
+02  The Arrival
+    51 min
+    72% watched
+
+03  The Signal
+    49 min
+
+The selected episode must be visually obvious.
+
+---
+
+49. NEXT EPISODE
+
+At the end of an episode:
+
+Next episode
+
+S01:E05
+The Return
+
+[Play Next]
+
+must appear.
+
+Do not immediately force playback without giving the user a moment to cancel.
+
+If the user chooses Play Next:
+
+- load the next episode
+- start playback
+- update progress
+- update history
+- update Continue Watching
+
+If there is no next episode, show a completion state instead.
+
+---
+
+50. DETAILS PAGE
+
+The Details screen must have a clear hierarchy.
+
+Priority:
+
+1. Back
+2. Poster/backdrop
+3. Title
+4. Metadata
+5. Description
+6. Primary Watch/Resume CTA
+7. My List
+8. Download
+9. Episodes for series
+10. About
+11. More Like This
+
+The primary CTA must change contextually:
+
+Watch now
+
+or:
+
+Resume
+
+or:
+
+Resume S02:E04
+
+Do not make users hunt through the interface to start watching.
+
+---
+
+51. DETAILS METADATA
+
+Use useful metadata without turning the screen into a database dump.
+
+Good:
+
+2026 · Series · 2 Seasons
+8.7 ★
+Drama · Thriller
+
+Avoid displaying meaningless technical fields.
+
+Keep metadata visually secondary to the title and Watch button.
+
+---
+
+52. MY LIST
+
+My List must behave like a real saved-content library.
+
+Users must be able to:
+
+- add titles
+- remove titles
+- see saved titles
+- open titles
+- persist the list after restarting the app
+
+Do not show an empty My List page with no explanation.
+
+Use a proper empty state:
+
+Your list is empty
+
+Save movies and series here to find them later.
+
+[Explore]
+
+---
+
+53. HISTORY
+
+Fix History completely.
+
+Requirements:
+
+- tapping artwork opens the title
+- tapping a delete/remove control removes the item
+- artwork must NEVER accidentally delete an item
+- history must persist after app restart
+- completed and partially watched items should be distinguishable
+- most recently watched should appear first
+
+Do not initialize the UI with an empty array if persisted history exists.
+
+Load persisted history during application startup.
+
+---
+
+54. CONTINUE WATCHING
+
+Continue Watching should only appear when there is actual watch progress.
+
+Never show:
+
+Continue Watching
+
+with zero items.
+
+Each card should show a progress indicator.
+
+For series:
+
+S02:E04
+
+should be visible where useful.
+
+Tapping the card should resume playback.
+
+---
+
+55. HOME SCREEN CONTENT HIERARCHY
+
+Home should feel editorial rather than like a raw API response.
+
+Recommended order:
+
+Featured
+↓
+Continue Watching
+↓
+Trending Now
+↓
+Popular Movies
+↓
+Popular Series
+↓
+New & Noteworthy
+↓
+More Like This / Recommended
+↓
+Curated Collection
+
+Only display a section when it has meaningful content.
+
+Do not show empty rails.
+
+Do not expose backend category names.
+
+---
+
+56. HERO SYSTEM
+
+The hero must support multiple featured titles.
+
+Use approximately 3–5 featured items when available.
+
+Support:
+
+- automatic rotation
+- manual navigation
+- swipe on mobile
+- arrows on desktop
+- D-pad navigation on TV
+- active indicator
+- smooth transitions
+- correct artwork
+- readable title
+- description
+- metadata
+- primary Watch button
+
+Do not create fake carousel indicators for a single item.
+
+If only one featured item exists, hide the carousel indicator.
+
+---
+
+57. DISCOVER
+
+Discover must feel different from Home.
+
+Home answers:
+
+«“What should I watch right now?”»
+
+Discover answers:
+
+«“Help me explore.”»
+
+Include useful exploration controls such as:
+
+All
+Movies
+Series
+Trending
+Popular
+New
+Genres
+
+Use real available backend data.
+
+Do not invent filters that the backend cannot support.
+
+---
+
+58. SEARCH
+
+Search must only promise functionality that actually exists.
+
+If the backend searches movies and series, use:
+
+Search movies and series
+
+Do not say:
+
+Search movies, series, people...
+
+unless people search is genuinely implemented.
+
+Search should include:
+
+- search field
+- clear button
+- recent searches
+- suggestions
+- results
+- empty state
+- loading state
+- error state
+- pagination/infinite loading where supported
+
+---
+
+59. SEARCH EMPTY STATE
+
+When no results exist:
+
+No results found
+
+Try another title or search term.
+
+Do not expose API or provider errors.
+
+---
+
+60. AUTHENTICATION
+
+Implement the missing authentication experience where required.
+
+Screens:
+
+Welcome
+Sign In
+Sign Up
+Forgot Password
+
+The screens must match VEYRA's visual identity.
+
+Do not create an authentication flow that visually feels like a completely different application.
+
+Handle:
+
+- loading
+- invalid credentials
+- network failure
+- successful authentication
+- session restoration
+- sign out
+- password reset
+
+Never expose raw authentication errors.
+
+---
+
+61. PROFILE
+
+Profile identity must be consistent throughout the application.
+
+Do not show:
+
+A
+
+in one location and:
+
+G Guest
+
+somewhere else.
+
+Use one identity source.
+
+Guest state should clearly appear as:
+
+Guest
+
+with appropriate actions.
+
+---
+
+62. SETTINGS
+
+Every visible setting must actually work.
+
+Do not expose controls that are merely decorative.
+
+If Appearance includes:
+
+System
+Dark
+Light
+
+then implement the theme behavior.
+
+Otherwise remove the unused option.
+
+Settings should include only functionality that exists.
+
+---
+
+63. DOWNLOADS
+
+Downloads must have a proper state system.
+
+States:
+
+Not downloaded
+Queued
+Downloading
+Paused
+Completed
+Failed
+Removing
+
+Display:
+
+- title
+- progress
+- size where available
+- download state
+- pause/resume where supported
+- delete
+- retry
+- available offline indicator
+
+Never show technical proxy/provider information.
+
+---
+
+64. OFFLINE MODE
+
+Offline mode should not randomly replace the entire application with a developer-style error screen.
+
+If the device loses connectivity:
+
+- preserve the current screen
+- show a subtle offline indicator
+- disable network-only actions
+- allow locally available content/features
+- retry when connection returns
+
+Example:
+
+You're offline
+Some features may be unavailable.
+
+---
+
+65. LOADING STATES
+
+Replace generic loading everywhere with screen-specific skeletons.
+
+Home:
+
+- hero skeleton
+- poster rail skeletons
+
+Discover:
+
+- grid skeleton
+
+Details:
+
+- backdrop skeleton
+- poster skeleton
+- title/action skeleton
+- description skeleton
+
+Episodes:
+
+- episode row skeleton
+
+Profile:
+
+- avatar/name skeleton
+- menu skeleton
+
+Never show a giant generic spinner when the layout is already known.
+
+---
+
+66. ERROR STATES
+
+Every error state must be written for normal users.
+
+Never expose:
+
+- API
+- endpoint
+- HTTP
+- JSON
+- provider
+- proxy
+- backend
+- Supabase
+- MovieBox
+- stack trace
+
+Use:
+
+Something went wrong.
+
+[Try again]
+
+or a more contextual message.
+
+Technical information belongs in logs only.
+
+---
+
+67. ANDROID BACK BEHAVIOR
+
+Implement proper Android navigation.
+
+Expected behavior:
+
+Player
+↓ Back
+Details
+
+Details
+↓ Back
+Previous screen
+
+Search Results
+↓ Back
+Search
+
+Search
+↓ Back
+Home
+
+Back should not randomly close the application when there is a valid previous screen.
+
+Preserve navigation state where appropriate.
+
+---
+
+68. MOBILE NAVIGATION
+
+Keep the bottom navigation simple.
+
+Recommended:
+
+Home
+Search
+My List
+Me
+
+Do not overcrowd the navigation bar.
+
+The active item must be visually obvious.
+
+Navigation must remain usable on small Android screens.
+
+---
+
+69. TOUCH TARGETS
+
+Interactive controls should generally provide approximately 44–48dp touch targets where practical.
+
+Fix tiny:
+
+- icon buttons
+- close buttons
+- back buttons
+- episode actions
+- settings controls
+- navigation items
+
+Do not sacrifice usability merely because a screenshot looks cleaner with microscopic controls.
+
+---
+
+70. TYPOGRAPHY
+
+Clean up typography inconsistencies.
+
+Avoid extremely tiny meaningful text.
+
+Do not use 6–8px text for information users are expected to read.
+
+Establish clear hierarchy:
+
+Hero title
+Section title
+Card title
+Metadata
+Secondary information
+Caption
+
+Maintain consistent font weights and line heights.
+
+---
+
+71. DESIGN TOKENS
+
+Centralize the visual system.
+
+Use tokens similar to:
+
+--bg: #080808;
+--surface-1: #101010;
+--surface-2: #171717;
+--surface-3: #202020;
+
+--text: #F5F5F5;
+--muted: #A1A1AA;
+--dim: #71717A;
+
+--accent: #E5093F;
+
+Do not scatter dozens of slightly different dark colors throughout the stylesheet.
+
+---
+
+72. VISUAL CONSISTENCY
+
+Every screen must feel like the same product.
+
+Maintain consistency across:
+
+- spacing
+- border radius
+- buttons
+- typography
+- icons
+- cards
+- shadows
+- focus states
+- loading states
+- error states
+- navigation
+
+Do not let individual screens develop their own unrelated design language.
+
+---
+
+73. ICONS
+
+Use correct semantic icons.
+
+For example:
+
+- Share → Share icon
+- Download → Download icon
+- Back → Arrow/chevron
+- Search → Search
+- Settings → Settings
+- Play → Play
+- Add → Plus
+- Remove → Minus/X where appropriate
+
+Do not use visually similar but semantically wrong icons just because they happen to exist in the icon library.
+
+---
+
+74. TV EXPERIENCE
+
+TV must not simply be a stretched mobile application.
+
+Implement:
+
+- sidebar navigation
+- large focusable controls
+- spatial D-pad navigation
+- strong focus indicators
+- hero focus
+- rail focus
+- episode focus
+- action-button focus
+- focus restoration
+
+Remote navigation must feel predictable.
+
+---
+
+75. TV SPATIAL NAVIGATION
+
+D-pad behavior should be spatial rather than a simple DOM sequence.
+
+Example:
+
+LEFT / RIGHT
+→ move within current row
+
+UP / DOWN
+→ move between visually adjacent rows
+
+UP from first rail
+→ hero/actions
+
+DOWN from hero
+→ first content rail
+
+When returning to a screen, restore the previously focused element where possible.
+
+---
+
+76. FOCUS DESIGN
+
+TV focus states must be obvious from several feet away.
+
+Use:
+
+- scale
+- border
+- glow/shadow where appropriate
+- contrast
+- clear selection state
+
+Do not rely only on a tiny color change.
+
+---
+
+77. MOTION
+
+Motion should communicate relationships.
+
+Good transitions:
+
+Card → Details
+Details → Player
+Episode → Player
+
+Use subtle:
+
+- fade
+- scale
+- slide
+- shared-element-style transitions
+
+Do not animate every component.
+
+The application should feel cinematic, not like a PowerPoint presentation having a nervous breakdown.
+
+---
+
+78. RESPONSIVE DESIGN
+
+Verify:
+
+- small Android phones
+- larger phones
+- tablets
+- desktop browser
+- TV-sized layouts
+
+Do not simply stretch the mobile layout.
+
+Maintain intentional composition at every breakpoint.
+
+---
+
+79. ACCESSIBILITY
+
+Implement practical accessibility.
+
+Ensure:
+
+- sufficient contrast
+- readable text
+- semantic labels
+- accessible buttons
+- keyboard navigation where applicable
+- TV focus visibility
+- reduced-motion consideration
+- screen-reader-friendly controls where practical
+
+Do not make accessibility an afterthought.
+
+---
+
+80. PERFORMANCE
+
+Optimize for low-end Android hardware.
+
+Avoid:
+
+- huge unnecessary images
+- expensive re-renders
+- massive DOM trees
+- unnecessary animations
+- unbounded lists
+- loading every poster at once
+
+Use:
+
+- lazy loading
+- virtualization where appropriate
+- image sizing
+- memoization where useful
+- efficient state updates
+- cached data where appropriate
+
+The app must remain usable on modest hardware.
+
+---
+
+81. DATA ARCHITECTURE
+
+Separate UI from provider/API implementation.
+
+Use a normalized internal model.
+
+The UI should consume structures such as:
+
+{
+  id,
+  title,
+  type,
+  year,
+  rating,
+  genres,
+  poster,
+  backdrop,
+  description,
+  seasons,
+  episodes
+}
+
+The UI must not depend directly on provider-specific response structures.
+
+---
+
+82. MEDIA SECURITY
+
+Never place private provider credentials inside:
+
+- React source
+- ".env" variables beginning with "VITE_"
+- APK assets
+- JavaScript bundles
+- localStorage
+- public configuration files
+
+Any secret API key must remain server-side.
+
+The client should receive only the data it actually needs.
+
+IMPORTANT:
+
+The previously exposed ZST API key must NOT be committed into the repository.
+
+If a secret has already been exposed, treat it as compromised and recommend rotation rather than reusing it.
+
+---
+
+83. MOVIEBOX / ZST INTEGRATION
+
+Use the existing VEYRA service architecture.
+
+Do not blindly copy the third-party MovieBox API repository into the frontend.
+
+The intended architecture is:
+
+VEYRA Android
+      ↓
+VEYRA Backend
+      ↓
+Authorized MovieBox/ZST service
+      ↓
+Catalog / Media / Streams
+      ↓
+VEYRA Player
+
+The frontend must communicate with the VEYRA-controlled API layer.
+
+Do not expose provider credentials.
+
+---
+
+84. REAL ENDPOINT INTEGRATION
+
+Where supported by the backend, connect:
+
+Homepage
+Trending
+Hot Movies & Series
+Search
+Search Suggestions
+Popular Searches
+Item Details
+Recommendations
+Media
+Stream
+Subtitles
+Downloads
+
+The UI must consume real responses.
+
+Remove mock behavior from production paths.
+
+Do not silently fall back to fake content when the API fails.
+
+---
+
+85. PROVIDER NORMALIZATION
+
+Create one normalization layer between provider data and UI.
+
+For example:
+
+Provider Response
+      ↓
+Normalizer
+      ↓
+VEYRA Model
+      ↓
+UI
+
+This prevents provider-specific fields from spreading throughout the application.
+
+---
+
+86. CACHING
+
+Cache catalog data where appropriate.
+
+Do not cache signed playback URLs indefinitely.
+
+Playback URLs may expire.
+
+Refresh playback information when necessary.
+
+Avoid stale media URLs causing mysterious playback failures.
+
+---
+
+87. NETWORK TIMEOUTS
+
+Every network request must have sensible timeout and cancellation behavior.
+
+Avoid requests hanging forever.
+
+When a request fails:
+
+- stop loading
+- show appropriate UI
+- provide retry
+- clean up pending state
+
+Abort obsolete search requests when a new query replaces them.
+
+---
+
+88. SEARCH PERFORMANCE
+
+Search should not fire a network request for every individual keystroke without control.
+
+Use debouncing where appropriate.
+
+Cancel obsolete requests.
+
+Avoid race conditions where an older response overwrites a newer search.
+
+---
+
+89. STATE MANAGEMENT
+
+Review application state carefully.
+
+Prevent:
+
+- duplicate requests
+- stale state
+- impossible loading states
+- navigation loops
+- stale selected episodes
+- stale player state
+- duplicate history entries
+- duplicate My List entries
+
+Use clear state ownership.
+
+---
+
+90. PERSISTENCE
+
+Persist only what genuinely needs persistence.
+
+Potential local persistence:
+
+- My List
+- History
+- Continue Watching
+- playback progress
+- recent searches
+- settings/preferences
+
+Do not dump entire API responses into localStorage unnecessarily.
+
+---
+
+91. OFFLINE DATA
+
+If offline support is implemented, distinguish between:
+
+Cached metadata
+
+and:
+
+Downloaded media
+
+Do not claim content is available offline unless the actual media exists locally.
+
+---
+
+92. EMPTY STATES
+
+Every major empty screen needs an intentional design.
+
+Examples:
+
+My List:
+
+Nothing saved yet.
+
+History:
+
+Nothing watched yet.
+
+Downloads:
+
+No downloads yet.
+
+Search:
+
+No results found.
+
+Do not leave blank black screens.
+
+---
+
+93. MICROCOPY
+
+Use simple human language.
+
+Keep poetic/cinematic language for:
+
+- hero
+- onboarding
+- promotional sections
+- selected empty states
+
+Use straightforward language for:
+
+- settings
+- downloads
+- profile
+- episodes
+- errors
+- authentication
+
+Do not make every sentence sound like it was written for a movie trailer.
+
+---
+
+94. REMOVE DEVELOPMENT COPY
+
+Search the entire repository for user-facing technical/development language.
+
+Look for terms such as:
+
+API
+provider
+backend
+endpoint
+catalog
+proxy
+MovieBox
+Supabase
+HTTP
+JSON
+request
+response
+service
+configuration
+credentials
+authorized media provider
+
+Replace or remove them wherever they appear in consumer-facing UI.
+
+Technical logs may retain technical terminology.
+
+---
+
+95. ERROR LOGGING
+
+Technical errors should be logged in development/debugging channels.
+
+User-facing UI should receive a normalized friendly error.
+
+Example internal:
+
+MEDIA_RESOLUTION_FAILED
+HTTP 502
+provider_timeout
+
+User-facing:
+
+We couldn't start playback.
+Try again.
+
+Keep these concerns separated.
+
+---
+
+96. TESTING
+
+Before considering the work complete, run:
+
+npm test
+npm run build
+npm run cap:sync
+cd android
+./gradlew assembleDebug
+
+Fix every build failure.
+
+Do not report success because a command was started.
+
+Only report success after verifying the command actually completed successfully.
+
+---
+
+97. AUTOMATED TEST COVERAGE
+
+Add or update tests for critical logic:
+
+- normalization
+- search
+- history persistence
+- My List persistence
+- playback progress
+- episode selection
+- next episode
+- API error handling
+- URL construction
+- media resolution
+
+Do not write meaningless tests that merely assert that constants exist.
+
+---
+
+98. ANDROID APK
+
+Build an actual Android APK.
+
+Verify:
+
+- app launches
+- splash works
+- navigation works
+- taps work
+- scrolling works
+- back button works
+- keyboard behavior works
+- player screen opens
+- settings work
+- persistence survives restart
+- no obvious crashes
+
+Do not stop at the browser preview.
+
+---
+
+99. LOW-END DEVICE QA
+
+Test with low-end Android assumptions.
+
+Pay special attention to:
+
+- startup time
+- memory usage
+- scrolling
+- image loading
+- navigation transitions
+- keyboard interaction
+- player performance
+- long lists
+
+Avoid creating a beautiful application that requires a gaming phone to display a poster.
+
+---
+
+100. FINAL VISUAL QA
+
+Before finishing, inspect every major screen as an actual user would.
+
+Check:
+
+Splash
+Welcome
+Auth
+Home
+Discover
+Search
+Search Results
+Details
+Episodes
+Player
+My List
+History
+Downloads
+Profile
+Settings
+Notifications
+Devices
+Offline
+Loading
+Error
+Empty states
+TV layout
+
+Look for:
+
+- spacing problems
+- clipped text
+- broken images
+- incorrect icons
+- inconsistent typography
+- buttons that don't work
+- dead screens
+- strange scroll behavior
+- everything 
