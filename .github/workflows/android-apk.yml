@@ -19,6 +19,8 @@ jobs:
     name: Validate and build debug APK
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    env:
+      VITE_MOVIEBOX_API_BASE_URL: https://movieboxapi.vercel.app
     steps:
       - name: Check out repository
         uses: actions/checkout@v7

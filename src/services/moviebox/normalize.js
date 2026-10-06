@@ -54,8 +54,19 @@ function normalizeNames(value) {
   return [];
 }
 
+function imageUrl(...values) {
+  for (const value of values) {
+    const object = asRecord(value);
+    const source = text(value) || (object && pickText(object.url, object.src, object.imageUrl, object.image_url, object.originalUrl));
+    const normalized = mediaUrl(source);
+    if (normalized) return normalized;
+  }
+  return undefined;
+}
+
 function contentType(record) {
-  const value = record.subjectType ?? record.subject_type ?? record.type ?? record.contentType ?? record.category;
+  const subject = asRecord(record.subject) || {};
+  const value = record.subjectType ?? record.subject_type ?? subject.subjectType ?? subject.subject_type ?? record.type ?? record.contentType ?? record.category;
   const normalized = String(value ?? '').toLowerCase();
   if (value === 2 || normalized === '2' || /series|tv|show|anime/.test(normalized)) return 'series';
   if (value === 1 || normalized === '1' || /movie|film/.test(normalized)) return 'movie';
@@ -65,9 +76,12 @@ function contentType(record) {
 export function normalizeContent(value, fallback = {}) {
   const record = asRecord(value);
   if (!record) return null;
+  const subject = asRecord(record.subject) || {};
   const providerItemId = pickText(
     record.subjectId,
     record.subject_id,
+    subject.subjectId,
+    subject.subject_id,
     record.providerItemId,
     record.provider_item_id,
     record.id,
@@ -75,20 +89,20 @@ export function normalizeContent(value, fallback = {}) {
     record.itemId,
     fallback.providerItemId,
   );
-  const detailPath = pickText(record.detailPath, record.detail_path, record.path, fallback.detailPath);
-  const title = pickText(record.title, record.name, record.subjectName, record.subject_name, fallback.title);
+  const detailPath = pickText(record.detailPath, record.detail_path, subject.detailPath, subject.detail_path, record.path, fallback.detailPath);
+  const title = pickText(record.title, record.name, record.subjectName, record.subject_name, subject.title, subject.name, fallback.title);
   if (!title || (!providerItemId && !detailPath)) return null;
 
-  const poster = mediaUrl(
-    record.cover || record.coverUrl || record.cover_url || record.poster || record.posterUrl ||
-    record.poster_url || record.image || record.imageUrl || record.image_url || record.thumbnail ||
-    record.thumb || record.pic || fallback.poster,
+  const poster = imageUrl(
+    record.poster, record.posterUrl, record.poster_url, record.cover, record.coverUrl, record.cover_url,
+    subject.poster, subject.cover, record.image, record.thumbnail, record.thumb, record.pic, fallback.poster,
   );
-  const backdrop = mediaUrl(
-    record.backdrop || record.backdropUrl || record.backdrop_url || record.background ||
-    record.backgroundUrl || record.landscapeCover || record.landscape_cover || fallback.backdrop || poster,
+  const backdrop = imageUrl(
+    record.backdrop, record.backdropUrl, record.backdrop_url, record.background, record.backgroundUrl,
+    record.landscapeCover, record.landscape_cover, record.image, subject.image, record.stills, subject.stills,
+    fallback.backdrop, poster,
   );
-  const yearValue = pickText(record.year, record.releaseYear, record.release_year, record.releaseDate, record.release_date, fallback.year);
+  const yearValue = pickText(record.year, record.releaseYear, record.release_year, record.releaseDate, record.release_date, subject.year, subject.releaseDate, fallback.year);
   const year = yearValue ? (yearValue.match(/\b(?:19|20)\d{2}\b/)?.[0] || yearValue) : undefined;
   const type = contentType(record) || fallback.type;
   const stableId = providerItemId || detailPath;
@@ -103,13 +117,13 @@ export function normalizeContent(value, fallback = {}) {
     poster,
     backdrop,
     year,
-    rating: pickText(record.imdbRatingValue, record.imdb_rating_value, record.rating, record.score, fallback.rating),
-    runtime: pickText(record.duration, record.runtime, record.durationText, record.duration_text, fallback.runtime),
-    genres: normalizeNames(record.genres ?? record.genre ?? record.tags ?? record.genreList ?? fallback.genres),
-    synopsis: pickText(record.description, record.overview, record.plot, record.summary, record.introduction, fallback.synopsis),
-    maturity: pickText(record.maturity, record.ageRating, record.age_rating, record.certification, fallback.maturity),
-    director: pickText(record.director, record.directorName, record.director_name, fallback.director),
-    cast: normalizeNames(record.cast ?? record.casts ?? record.actors ?? record.actorList ?? fallback.cast),
+    rating: pickText(record.imdbRatingValue, record.imdb_rating_value, record.rating, record.score, subject.imdbRatingValue, subject.rating, fallback.rating),
+    runtime: pickText(record.duration, record.runtime, record.durationText, record.duration_text, subject.duration, subject.runtime, fallback.runtime),
+    genres: normalizeNames(record.genres ?? record.genre ?? record.tags ?? record.genreList ?? subject.genres ?? subject.genre ?? fallback.genres),
+    synopsis: pickText(record.description, record.overview, record.plot, record.summary, record.introduction, subject.description, subject.overview, subject.plot, fallback.synopsis),
+    maturity: pickText(record.maturity, record.ageRating, record.age_rating, record.certification, subject.maturity, subject.ageRating, fallback.maturity),
+    director: pickText(record.director, record.directorName, record.director_name, subject.director, fallback.director),
+    cast: normalizeNames(record.cast ?? record.casts ?? record.actors ?? record.actorList ?? subject.cast ?? subject.actors ?? fallback.cast),
     raw: record,
   };
 }
@@ -117,9 +131,9 @@ export function normalizeContent(value, fallback = {}) {
 const COLLECTION_KEYS = new Set([
   'items', 'list', 'results', 'subjects', 'subjectlist', 'subject_list',
   'recommendations', 'recommendlist', 'recommend_list', 'hot', 'trending',
-  'movies', 'series', 'movieList', 'seriesList', 'data', 'result',
+  'movies', 'series', 'movie', 'tv', 'movielist', 'serieslist', 'data', 'result',
 ]);
-const NON_CONTENT_KEYS = new Set(['cast', 'casts', 'actors', 'actorlist', 'genres', 'genre', 'tags', 'captions', 'downloads']);
+const NON_CONTENT_KEYS = new Set(['cast', 'casts', 'actors', 'actorlist', 'genres', 'genre', 'tags', 'captions', 'downloads', 'seasons', 'seasonlist', 'season_list', 'episodes', 'episodelist', 'episode_list']);
 
 function humanize(key) {
   const label = String(key || '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').trim();
@@ -129,28 +143,29 @@ function humanize(key) {
 
 function collectArrays(value, { maxDepth = 5 } = {}) {
   const found = [];
-  const visit = (node, path, depth) => {
+  const visit = (node, path, depth, inheritedTitle) => {
     if (depth > maxDepth || !node || typeof node !== 'object') return;
     if (Array.isArray(node)) {
       const normalized = node.map((entry) => normalizeContent(entry)).filter(Boolean);
-      if (normalized.length) found.push({ key: path[path.length - 1] || 'More to explore', items: normalized });
-      if (!normalized.length) node.forEach((entry) => visit(entry, path, depth + 1));
+      if (normalized.length) found.push({ key: path[path.length - 1] || 'More to explore', title: inheritedTitle, items: normalized });
+      if (!normalized.length) node.forEach((entry) => visit(entry, path, depth + 1, inheritedTitle));
       return;
     }
+    const sectionTitle = pickText(node.title, node.sectionTitle, node.section_name, node.categoryName, inheritedTitle);
     for (const [key, child] of Object.entries(node)) {
       if (NON_CONTENT_KEYS.has(key.toLowerCase())) continue;
       if (Array.isArray(child)) {
         const normalized = child.map((entry) => normalizeContent(entry)).filter(Boolean);
-        if (normalized.length) found.push({ key, items: normalized });
-        else child.forEach((entry) => visit(entry, [...path, key], depth + 1));
+        if (normalized.length) found.push({ key, title: sectionTitle, items: normalized });
+        else child.forEach((entry) => visit(entry, [...path, key], depth + 1, sectionTitle));
       } else if (child && typeof child === 'object') {
         const singleContent = normalizeContent(child);
-        if (singleContent) found.push({ key, items: [singleContent] });
-        else visit(child, [...path, key], depth + 1);
+        if (singleContent) found.push({ key, title: sectionTitle, items: [singleContent] });
+        else visit(child, [...path, key], depth + 1, sectionTitle);
       }
     }
   };
-  visit(value, [], 0);
+  visit(value, [], 0, undefined);
   return found;
 }
 
@@ -169,12 +184,13 @@ export function extractContentList(value) {
   if (!record) return [];
   const singleContent = normalizeContent(record);
   if (singleContent) return [singleContent];
+  const preferredItems = [];
   for (const [key, child] of Object.entries(record)) {
-    if (COLLECTION_KEYS.has(key) && Array.isArray(child)) {
-      const items = dedupeItems(child.map((entry) => normalizeContent(entry)).filter(Boolean));
-      if (items.length) return items;
+    if (COLLECTION_KEYS.has(key.toLowerCase()) && Array.isArray(child)) {
+      preferredItems.push(...child.map((entry) => normalizeContent(entry)).filter(Boolean));
     }
   }
+  if (preferredItems.length) return dedupeItems(preferredItems);
   const arrays = collectArrays(record);
   return dedupeItems(arrays.flatMap((entry) => entry.items));
 }
@@ -188,10 +204,11 @@ export function extractContentSections(value) {
   for (const entry of arrays) {
     const items = dedupeItems(entry.items);
     if (!items.length) continue;
-    const sectionKey = String(entry.key || 'More to explore');
-    if (seenSections.has(sectionKey.toLowerCase())) continue;
-    seenSections.add(sectionKey.toLowerCase());
-    sections.push({ id: `moviebox-section:${sectionKey}`, title: humanize(sectionKey), items });
+    const sectionKey = String(entry.title || entry.key || 'More to explore');
+    const title = humanize(sectionKey);
+    if (seenSections.has(title.toLowerCase())) continue;
+    seenSections.add(title.toLowerCase());
+    sections.push({ id: `moviebox-section:${sectionKey}`, title, items });
   }
   return sections;
 }
@@ -208,7 +225,7 @@ function episodeRecord(value, seasonApiValue) {
   if (!record) return null;
   const title = pickText(record.title, record.name, record.episodeName, record.episode_name);
   if (!title) return null;
-  const poster = mediaUrl(record.cover || record.coverUrl || record.poster || record.thumbnail || record.image || record.thumb);
+  const poster = imageUrl(record.cover, record.coverUrl, record.poster, record.thumbnail, record.image, record.thumb);
   const number = pickText(record.episodeNo, record.episode_no, record.episodeNumber, record.episode_number, record.ep, record.number);
   return {
     id: pickText(record.episodeId, record.episode_id, record.id, record.ep) || `${seasonApiValue ?? 'season'}:${number || title}`,
@@ -265,7 +282,7 @@ export function normalizeDetail(value, fallback) {
 
 export function extractSuggestions(value) {
   if (Array.isArray(value)) {
-    return value.map((entry) => typeof entry === 'string' ? entry : pickText(entry?.keyword, entry?.title, entry?.name)).filter(Boolean);
+    return value.map((entry) => typeof entry === 'string' ? entry : pickText(entry?.keyword, entry?.word, entry?.title, entry?.name)).filter(Boolean);
   }
   const record = asRecord(value);
   if (!record) return [];

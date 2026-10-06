@@ -4,7 +4,7 @@
 
 VEYRA now has a dedicated client for the JSON catalog endpoints and normalizes returned objects before rendering them. The client does not contain an API default: set `VITE_MOVIEBOX_API_BASE_URL` to an API deployment that you control or are authorized to use. Nothing in a `VITE_*` variable is secret; it is compiled into the web bundle and the Capacitor Android assets.
 
-The API source inspected for this work is `Godszeal/movieboxapi` at `71063902ba30dc264adad65cecb8146631e47c36`. Its README advertises `https://movieboxapigz.vercel.app/`, but the repository has no `/health` route and the advertised host did not complete a TLS connection from this sandbox during the audit. The deployment and live API response are therefore **NOT VERIFIED**. Use `/api/homepage` as a read-only application reachability check only after configuring an authorized deployment.
+The API source inspected for this work is `Godszeal/movieboxapi` at `71063902ba30dc264adad65cecb8146631e47c36`. Its README advertises `https://movieboxapigz.vercel.app/`, a different host from the current configured `https://movieboxapi.vercel.app`. The latter returned successful JSON for read-only `/api/homepage` and `/api/search` retrieval during this update; this does not verify authorization, browser CORS, uptime, Android reachability, or media behavior. The source repository has no `/health` route. Treat catalog availability as a point-in-time observation only.
 
 ## Screen → service → endpoint → transformation → UI
 
@@ -43,7 +43,7 @@ These mechanisms appear designed to evade upstream identity/referrer restriction
 The inspected API repository is Next.js 15 / Node.js 20+ and recommends Vercel for JSON routes plus a separate persistent Node host for media delivery. These are repository deployment instructions, not a verified deployment. It exposes wildcard `Access-Control-Allow-Origin: *` headers on its JSON routes; it has no health route in the checked-out source. The remote deployment, credentials, proxy host, CORS in production, and upstream behavior were not verified.
 
 1. Deploy or select an API that you control and are authorized to use.
-2. Set `VITE_MOVIEBOX_API_BASE_URL=https://<your-api-host>` in the Vite build environment. Local development may use `.env.local` with a local API host; `.env*` files other than `.env.example` are ignored by Git.
+2. Local development copies `.env.example` to `.env.local`; both contain `VITE_MOVIEBOX_API_BASE_URL=https://movieboxapi.vercel.app`. The Android APK workflow sets the same public value in its build job. `.env.local` is ignored by Git.
 3. Rebuild the web app and run `npx cap sync android` after setting the variable. The base URL is public configuration and will be visible in the web and APK bundles.
 4. Keep all upstream credentials and private tokens on the API server. Never add them to `VITE_*`, browser storage, this repository, or the APK.
 5. The MovieBox wrapper has no health route. Once the deployment is authorized, a successful `GET /api/homepage` is the configured application check.
@@ -61,4 +61,4 @@ npx cap sync android
 cd android && ./gradlew assembleDebug
 ```
 
-Without `VITE_MOVIEBOX_API_BASE_URL`, catalog and search requests fail closed with a configuration message; no bundled sample catalog is used. Do not use the public MovieBox URL as a test source unless you have permission to do so. Actual catalog/search response verification, API deployment health, streaming, subtitles, downloads, offline playback, Android media behavior, and real-device testing remain **NOT VERIFIED**.
+When neither `.env.local` nor a build-time `VITE_MOVIEBOX_API_BASE_URL` is present, catalog and search requests fail closed with a configuration message; no bundled sample catalog is used. The current public URL is used for metadata requests only. Use it only if its operator authorizes your use. Browser CORS, stable deployment health, streaming, subtitles, downloads, offline playback, Android runtime networking, and real-device behavior remain **NOT VERIFIED**.

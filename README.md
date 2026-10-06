@@ -4,11 +4,10 @@ VEYRA is a cinematic React/Vite application packaged for Android with Capacitor.
 
 ## Configure the catalog API
 
-Create a local environment file from the example and set a deployment you control or are authorized to use:
+Create a local environment file from the example. It sets the metadata API base to `https://movieboxapi.vercel.app`; use this deployment only if its operator authorizes your use:
 
 ```bash
 cp .env.example .env.local
-# Set VITE_MOVIEBOX_API_BASE_URL in .env.local
 ```
 
 `VITE_MOVIEBOX_API_BASE_URL` is public configuration compiled into the web app and Android assets. Do not put upstream credentials, private tokens, or secrets in any `VITE_*` variable. Keep them on the API server. See [the integration audit](docs/MOVIEBOX_INTEGRATION.md) for the endpoint mapping and the media/security boundary.
@@ -53,4 +52,4 @@ The APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. The G
 
 ## Verification
 
-The source advertises a MovieBox API deployment, but its host did not complete a TLS connection from the audit sandbox and the repository has no `/health` route. Catalog data from a live service, Android network behavior, streaming, downloads, subtitles, offline playback, and real-device testing are **NOT VERIFIED**. See [docs/MOVIEBOX_INTEGRATION.md](docs/MOVIEBOX_INTEGRATION.md).
+The configured metadata host returned successful read-only homepage and search JSON responses during this update, but browser CORS, stable availability, Android runtime networking, streaming, downloads, subtitles, offline playback, and real-device behavior are **NOT VERIFIED**. See [docs/MOVIEBOX_INTEGRATION.md](docs/MOVIEBOX_INTEGRATION.md).
