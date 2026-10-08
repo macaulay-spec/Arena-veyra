@@ -19,8 +19,11 @@ jobs:
     name: Validate and build debug APK
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    # VITE_* values are PUBLIC: Vite compiles them into the web bundle and the
+    # APK. There is no backend in this project that could hold a secret.
     env:
-      VITE_MOVIEBOX_API_BASE_URL: https://movieboxapi.vercel.app
+      VITE_MOVIEBOX_API_BASE_URL: https://api.zstlab.cyou
+      VITE_ZST_API_KEY: ${{ secrets.VITE_ZST_API_KEY }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -51,8 +54,17 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Check catalog configuration
+        run: |
+          if [ -z "${VITE_ZST_API_KEY}" ]; then
+            echo "::warning::VITE_ZST_API_KEY is not set. The build will show an explicit API-configuration error instead of a catalog."
+          fi
+
       - name: Run service-layer tests
         run: npm test
+
+      - name: Run render smoke test
+        run: npm run test:ssr
 
       - name: Validate frontend production build
         run: npm run build

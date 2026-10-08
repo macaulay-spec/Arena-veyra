@@ -1086,3 +1086,119 @@ img { display: block; max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Real playback stage, source/quality states and provider notices */
+.player-stage { position: absolute; inset: 0; z-index: -2; display: grid; place-items: center; background-color: #050505; background-position: center 40%; background-size: cover; background-repeat: no-repeat; }
+.player-video { width: 100%; height: 100%; max-height: 100%; object-fit: contain; background: transparent; }
+.player-scrim { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(0,0,0,.62), rgba(0,0,0,.08) 26%, transparent 54%, rgba(0,0,0,.74)); transition: opacity .3s ease; }
+.player-screen.player-idle .player-scrim { opacity: .25; }
+.player-error-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
+.player-error-note { display: block; max-width: 380px; margin-top: 14px; color: #96959b; font-size: 9px; line-height: 1.6; }
+.sheet-close { display: grid; place-items: center; width: 30px; height: 30px; flex: 0 0 auto; border: 1px solid rgba(255,255,255,.12); border-radius: 50%; background: transparent; color: #c9c8cb; cursor: pointer; }
+.sheet-close:hover { border-color: rgba(229,9,63,.5); color: #fff; }
+.sheet-note { margin: 13px 0 0; color: #85848a; font-size: 9px; line-height: 1.6; }
+.sheet-season { width: 100%; margin: 0 0 10px; }
+.option-list button.option-static { cursor: default; color: #9a999f; }
+.option-list button.option-static:hover { color: #9a999f; }
+.option-static .option-check { border-style: dashed; }
+.maintenance-banner { position: relative; z-index: 12; display: flex; align-items: center; gap: 11px; max-width: 1680px; margin: 0 auto; padding: 11px clamp(22px, 5.5vw, 92px); color: #d9c4a4; }
+.home-page .maintenance-banner { margin-top: 88px; }
+.maintenance-banner p { flex: 1; margin: 0; font-size: 10px; line-height: 1.55; }
+.maintenance-banner button { display: grid; place-items: center; width: 26px; height: 26px; border: 0; background: transparent; color: #9a8b76; cursor: pointer; }
+.maintenance-dot { display: inline-block; width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: #e0a45c; box-shadow: 0 0 10px rgba(224,164,92,.6); }
+.detail-source-note { display: flex; align-items: center; gap: 8px; margin: 16px 0 0; color: #d8a1ae; font-size: 10px; }
+.search-end-note { margin: 22px 0 0; color: #7f7e84; font-size: 10px; }
+.tv-catalog-warning { padding: 0 clamp(30px, 4.3vw, 70px); }
+.history-row-actions { display: flex; align-items: center; gap: 8px; grid-column: 3 / 5; justify-self: end; }
+.download-card .download-art { display: block; }
+.download-state { display: flex; align-items: center; gap: 7px; margin-top: 13px; font-size: 9px; letter-spacing: .04em; }
+.download-state svg { flex: 0 0 auto; }
+.download-state-busy { color: #d5c08a; }
+.download-state-busy svg { animation: spin 1.3s linear infinite; }
+.download-state-ready { color: #a4d9b5; }
+.download-state-warn { color: #e39aab; }
+.download-info > small { max-width: 560px; line-height: 1.6; }
+
+@media (max-width: 760px) {
+  .maintenance-banner { padding: 10px 15px; }
+  .home-page .maintenance-banner { margin-top: 72px; }
+  .player-error-actions { flex-direction: column; }
+  .player-error-actions .button { width: 100%; justify-content: center; }
+  .history-row-actions { gap: 4px; }
+  .history-resume { padding: 0 9px; font-size: 9px; }
+}
+
+/*
+ * Minimal light appearance. VEYRA is a dark-first product; these overrides
+ * only keep the shared shell, cards and menus readable when the appearance
+ * setting is "System" and the device prefers a light theme. The player and
+ * the TV composition stay dark on purpose.
+ */
+[data-theme='light'] {
+  --bg: #f5f4f1;
+  --surface: #ffffff;
+  --surface-2: #faf9f6;
+  --surface-3: #efece7;
+  --ink: #16151a;
+  --muted: #5d5c63;
+  --dim: #86858c;
+  --line: rgba(20,18,24,.12);
+  color-scheme: light;
+}
+[data-theme='light'] body { background: var(--bg); color: var(--ink); }
+[data-theme='light'] .app-shell,
+[data-theme='light'] .page-screen,
+[data-theme='light'] .home-page,
+[data-theme='light'] .detail-screen { background: var(--bg); }
+[data-theme='light'] .home-hero-gradient { background: linear-gradient(180deg, rgba(245,244,241,.2), rgba(245,244,241,.92) 62%, var(--bg)); }
+[data-theme='light'] .poster-copy strong,
+[data-theme='light'] .rail-heading h2,
+[data-theme='light'] .page-title-row h1,
+[data-theme='light'] .about-block h2,
+[data-theme='light'] .empty-state h2,
+[data-theme='light'] .error-state h2,
+[data-theme='light'] .search-result-copy strong,
+[data-theme='light'] .history-info h2,
+[data-theme='light'] .continue-info h2,
+[data-theme='light'] .download-title-line h2,
+[data-theme='light'] .profile-identity h2 { color: var(--ink); }
+[data-theme='light'] .eyebrow,
+[data-theme='light'] .poster-copy > span,
+[data-theme='light'] .empty-state p,
+[data-theme='light'] .error-state p,
+[data-theme='light'] .about-block p,
+[data-theme='light'] .page-title-row p,
+[data-theme='light'] .history-info > span:not(.eyebrow),
+[data-theme='light'] .continue-info > p,
+[data-theme='light'] .search-empty p,
+[data-theme='light'] .detail-description { color: var(--muted); }
+[data-theme='light'] .error-state,
+[data-theme='light'] .suggestion-list,
+[data-theme='light'] .continue-card,
+[data-theme='light'] .download-card,
+[data-theme='light'] .profile-quick-actions > button,
+[data-theme='light'] .settings-preview,
+[data-theme='light'] .storage-card,
+[data-theme='light'] .search-field-wrap,
+[data-theme='light'] .segmented,
+[data-theme='light'] .genre-chip,
+[data-theme='light'] .season-select,
+[data-theme='light'] .bottom-sheet,
+[data-theme='light'] .confirm-dialog { background: var(--surface); border-color: var(--line); color: var(--ink); }
+[data-theme='light'] .suggestion-list button:hover,
+[data-theme='light'] .profile-link-row:hover { background: rgba(20,18,24,.05); }
+[data-theme='light'] .suggestion-list button,
+[data-theme='light'] .profile-link-row,
+[data-theme='light'] .setting-select select,
+[data-theme='light'] .settings-link-row,
+[data-theme='light'] .history-info > span,
+[data-theme='light'] .download-info > small { color: var(--muted); }
+[data-theme='light'] .segmented button.selected { background: #dedbd5; color: #16151a; }
+[data-theme='light'] .option-list button,
+[data-theme='light'] .sheet-episode-list button { color: var(--muted); border-bottom-color: var(--line); }
+[data-theme='light'] .option-list button:hover,
+[data-theme='light'] .option-list button.option-selected { color: #16151a; }
+[data-theme='light'] .bottom-nav { background: rgba(255,255,255,.94); border-top-color: var(--line); }
+[data-theme='light'] .toast { background: #16151a; color: #f5f4f1; }
+[data-theme='light'] .season-select select option,
+[data-theme='light'] .setting-select select option { background: #fff; color: #16151a; }
