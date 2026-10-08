@@ -1350,23 +1350,30 @@ export default function App() {
     window.history.replaceState({ ...(window.history.state || {}), veyra: initialRoute() }, '');
     const onPop = (event) => {
       if (pushedRef.current > 0) pushedRef.current -= 1;
-      const destination = event.state?.veyra;
+      const state = event.state || {};
       setTvProfileOpen(false);
-      setView(destination || 'home');
+      // Restore the exact screen the entry was created from, so back from a
+      // second title (or from the player) lands on what was actually open.
+      if (state.detailFrom) setDetailFrom(state.detailFrom);
+      if (state.title) setSelectedTitle(state.title);
+      if (state.playback) setPlayback(state.playback);
+      if (state.playerFrom) setPlayerFrom(state.playerFrom);
+      setView(state.veyra || 'home');
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  const go = useCallback((destination) => {
+  const navigate = useCallback((destination, state = {}) => {
     setView(destination);
     setTvProfileOpen(false);
     if (typeof window !== 'undefined') {
-      window.history.pushState({ veyra: destination }, '');
+      window.history.pushState({ veyra: destination, ...state }, '');
       pushedRef.current += 1;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, []);
+  const go = navigate;
 
   const goBack = useCallback((fallback) => {
     if (typeof window !== 'undefined' && pushedRef.current > 0) {
@@ -1409,16 +1416,17 @@ export default function App() {
     const from = view === 'detail' || view === 'tv-detail' ? detailFrom : view;
     setDetailFrom(from);
     setSelectedTitle(item);
-    go(from.startsWith('tv') ? 'tv-detail' : 'detail');
+    navigate(from.startsWith('tv') ? 'tv-detail' : 'detail', { title: item, detailFrom: from });
   };
   const goBackFromDetail = () => goBack(detailFrom || 'home');
 
   const startPlayer = (item = selectedTitle, episode = null, seasonNumber = null, position = 0) => {
     const target = item || selectedTitle;
     if (!target) return;
-    setPlayback({ content: target, episode, season: seasonNumber, startPosition: position });
+    const payload = { content: target, episode, season: seasonNumber, startPosition: position };
+    setPlayback(payload);
     setPlayerFrom(view);
-    go(view.startsWith('tv') ? 'tv-player' : 'player');
+    navigate(view.startsWith('tv') ? 'tv-player' : 'player', { playback: payload, playerFrom: view });
   };
 
   /* ---------------- history ---------------- */
