@@ -6,38 +6,36 @@ VEYRA is a cinematic React 19 + Vite streaming app, packaged for Android with Ca
 - My List, history, download attempts and preferences live in `localStorage` on the device.
 - VEYRA never falls back to sample titles, never simulates playback with a timer, and never opens an external video site.
 
-## Configure the catalog API
+## Catalog API configuration
 
-Copy the example file and set your key:
+**There is nothing to configure.** The ZST Labs endpoint and key are compiled into the app, so a fresh clone, `npm run dev`, the web build and the Android APK all talk to the real catalog with no `.env.local`, no repository secret and no extra setup:
 
-```bash
-cp .env.example .env.local
+```js
+// src/services/moviebox/client.js
+export const DEFAULT_API_BASE_URL = 'https://api.zstlab.cyou';
+export const DEFAULT_API_KEY = 'zst_enmXGDIVEwb078T0xgSCeHau7aFsE8NkdI2czeTz';
 ```
+
+Environment variables exist only as an **override** — for example to point a build at another deployment (`.env.example` documents them):
 
 ```dotenv
+# optional; both values already have working defaults
 VITE_MOVIEBOX_API_BASE_URL=https://api.zstlab.cyou
-VITE_ZST_API_KEY=your-zst-labs-api-key
+VITE_ZST_API_KEY=zst_...
 ```
 
-> **The key is public.** There is no backend in this project, so `VITE_*` values are compiled straight into the web bundle **and** the Android APK. Anyone with the app can read them. The key is sent on every catalog request as the `x-api-key` header. Use your own key, keep the repository/build private, and rotate the key if it leaks.
+Build-time environment wins when it is set; anything blank or missing falls back to the built-in values, so a blank variable can never break a working configuration. The Android workflow (`.github/workflows/android-apk.yml`) needs no secrets: it builds from the defaults and fails the job if the endpoint and key are missing from the produced bundle.
 
-The Android workflow (`.github/workflows/android-apk.yml`) passes both values to the build:
-
-```yaml
-env:
-  VITE_MOVIEBOX_API_BASE_URL: https://api.zstlab.cyou
-  VITE_ZST_API_KEY: ${{ secrets.VITE_ZST_API_KEY }}
-```
+> **About the API key.** `VITE_*` values are compiled into the web bundle and the APK, so anyone who has the app can read the key — that is true by design here, because this project has no backend that could hold a secret on its behalf. The provider authenticates the *app*, not the person. Keep the repository private if you like, but treat the key as public: it is sent as the `x-api-key` header on every catalog request. If it is rotated or revoked, `/api/*` answers 401/403 and each catalog screen shows an explicit "the API rejected this build's key" message with a retry. To use a different key, put it in `.env.local` (git-ignored) or edit `DEFAULT_API_KEY`.
 
 ## Run locally
 
 ```bash
 npm ci
-cp .env.example .env.local   # then fill in your key
-npm run dev
+npm run dev                  # already talks to the real catalog
 ```
 
-Vite binds to `0.0.0.0`. Without a configured base URL or key, the app fails closed: catalog screens show an explicit configuration message with a retry, and no fixture content is rendered.
+Vite binds to `0.0.0.0`. If the configuration is ever empty or malformed, the app fails closed: catalog screens show an explicit configuration message with a retry, and no fixture content is rendered.
 
 ## Checks
 

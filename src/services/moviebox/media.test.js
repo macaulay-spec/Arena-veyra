@@ -72,7 +72,8 @@ test('normalizeMedia exposes only the caption languages returned, never a broken
   // Caption links are always absolute and are rebuilt away from the
   // maintenance-prone proxy-download route whenever a base URL is configured.
   assert.match(french.url, /^https:\/\//);
-  assert.ok(!/\/api\/proxy-download/.test(french.url) || buildApiProxyUrl('x') === undefined);
+  assert.ok(!/\/api\/proxy-download/.test(french.url));
+  assert.equal(buildApiProxyUrl('https://cacdn.example/subtitle/en.srt'), 'https://api.zstlab.cyou/api/proxy?url=https%3A%2F%2Fcacdn.example%2Fsubtitle%2Fen.srt');
 });
 
 test('provider proxy links are recognised by path so they can be rebuilt', () => {
@@ -152,6 +153,10 @@ test('srtToVtt converts SubRip cues and rejects non-caption payloads', () => {
 test('probes never invent availability', async () => {
   assert.deepEqual(await probeDownloadAvailability('', {}), { available: false, reason: 'NO_DOWNLOAD_URL' });
   assert.deepEqual(await probeMediaUrl('not-a-url'), { ok: false, reason: 'NO_URL' });
-  // Without a configured base URL the client refuses to build a proxy link.
-  assert.equal(buildApiProxyUrl('https://cdn.example/360.mp4'), undefined);
+  // No target URL means no proxy link, even with a base URL configured.
+  assert.equal(buildApiProxyUrl(''), undefined);
+  assert.equal(buildApiProxyUrl('not-a-url'), undefined);
+  // A raw CDN link is rebuilt onto the provider proxy, which is the URL the
+  // provider itself serves for playback.
+  assert.equal(buildApiProxyUrl('https://cdn.example/360.mp4'), 'https://api.zstlab.cyou/api/proxy?url=https%3A%2F%2Fcdn.example%2F360.mp4');
 });

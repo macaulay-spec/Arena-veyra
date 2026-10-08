@@ -1,13 +1,19 @@
 /**
  * ZST Labs MovieBox API client.
  *
- * Configuration is read from Vite environment variables:
+ * VEYRA ships configured: the endpoint and key below are compiled into the app,
+ * so a fresh clone, `npm run dev`, the web build and the Android APK all reach
+ * the real catalog with no setup.
+ *
+ * Build-time environment variables still win over the built-in defaults, which
+ * is how you point a deployment at another endpoint:
  *   VITE_MOVIEBOX_API_BASE_URL  e.g. https://api.zstlab.cyou
  *   VITE_ZST_API_KEY            sent on every request as `x-api-key`
  *
- * Both values are PUBLIC: Vite inlines them into the web bundle and the
- * Capacitor Android assets. There is no backend service in this project and
- * VEYRA does not pretend there is one.
+ * Both values are PUBLIC. Vite inlines them into the web bundle and the
+ * Capacitor Android assets, so anyone who has the site or the APK can read
+ * them. There is no backend service in this project that could hold a secret,
+ * and VEYRA does not pretend there is one. See README.md -> "About the API key".
  *
  * Only the documented routes below are ever called. See docs/MOVIEBOX_INTEGRATION.md.
  */
@@ -22,9 +28,31 @@ const RATE_LIMIT = 300;
 const RATE_GUARD = 240;
 const MAX_RATE_WAIT_MS = 4_000;
 
+/**
+ * Built-in catalog configuration. These ship with the app so that nothing has
+ * to be configured before VEYRA can browse and play something.
+ */
+export const DEFAULT_API_BASE_URL = 'https://api.zstlab.cyou';
+export const DEFAULT_API_KEY = 'zst_enmXGDIVEwb078T0xgSCeHau7aFsE8NkdI2czeTz';
+
 const VITE_ENV = import.meta.env || {};
-const API_BASE_URL = String(VITE_ENV.VITE_MOVIEBOX_API_BASE_URL || '').trim().replace(/\/+$/, '');
-const API_KEY = String(VITE_ENV.VITE_ZST_API_KEY || '').trim();
+
+/**
+ * Resolves the catalog configuration: environment overrides first, built-in
+ * defaults for anything missing or blank. Pure, so the contract is unit tested.
+ */
+export function resolveApiConfig(env = VITE_ENV) {
+  const configuredBase = String(env?.VITE_MOVIEBOX_API_BASE_URL || '').trim().replace(/\/+$/, '');
+  const configuredKey = String(env?.VITE_ZST_API_KEY || '').trim();
+  return {
+    baseUrl: configuredBase || DEFAULT_API_BASE_URL,
+    apiKey: configuredKey || DEFAULT_API_KEY,
+  };
+}
+
+const CONFIG = resolveApiConfig();
+const API_BASE_URL = CONFIG.baseUrl;
+const API_KEY = CONFIG.apiKey;
 
 export class MovieBoxServiceError extends Error {
   constructor(message, { status = 0, code = 'MOVIEBOX_ERROR', endpoint = '', retryAfter = 0 } = {}) {
@@ -63,8 +91,13 @@ export const CACHE_TTL_MS = Object.freeze({
   media: 60_000,
 });
 
-function requireApiBaseUrl() {
-  if (!API_BASE_URL) {
+/**
+ * Validates a catalog base URL and returns it, or throws a coded error. Pure,
+ * so a misconfigured build still fails loudly even though the shipped defaults
+ * mean it never happens by accident.
+ */
+export function assertApiBaseUrl(baseUrl, { prod = false } = {}) {
+  if (!baseUrl) {
     throw new MovieBoxServiceError(
       'The catalog API is not configured. Set VITE_MOVIEBOX_API_BASE_URL (and VITE_ZST_API_KEY) at build time.',
       { code: 'API_NOT_CONFIGURED' },
@@ -72,17 +105,21 @@ function requireApiBaseUrl() {
   }
   let parsed;
   try {
-    parsed = new URL(API_BASE_URL);
+    parsed = new URL(baseUrl);
   } catch {
     throw new MovieBoxServiceError('VITE_MOVIEBOX_API_BASE_URL must be an absolute HTTP(S) URL.', { code: 'INVALID_API_BASE_URL' });
   }
   if (!['https:', 'http:'].includes(parsed.protocol)) {
     throw new MovieBoxServiceError('VITE_MOVIEBOX_API_BASE_URL must use HTTP or HTTPS.', { code: 'INVALID_API_BASE_URL' });
   }
-  if (VITE_ENV.PROD && parsed.protocol !== 'https:') {
+  if (prod && parsed.protocol !== 'https:') {
     throw new MovieBoxServiceError('The production catalog API URL must use HTTPS.', { code: 'INSECURE_API_BASE_URL' });
   }
-  return API_BASE_URL;
+  return baseUrl;
+}
+
+function requireApiBaseUrl() {
+  return assertApiBaseUrl(API_BASE_URL, { prod: Boolean(VITE_ENV.PROD) });
 }
 
 function buildUrl(path, params = {}) {

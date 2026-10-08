@@ -8,12 +8,13 @@ This document describes exactly what VEYRA calls, how responses are normalized, 
 | --- | --- |
 | Base URL | `https://api.zstlab.cyou` |
 | Key header | `x-api-key` on every JSON request |
-| Public key form | `VITE_ZST_API_KEY` (see the warning below) |
-| Base URL setting | `VITE_MOVIEBOX_API_BASE_URL` |
+| Key | Compiled into the app as `DEFAULT_API_KEY` in `src/services/moviebox/client.js` |
+| Base URL | Compiled into the app as `DEFAULT_API_BASE_URL` |
+| Optional overrides | `VITE_ZST_API_KEY`, `VITE_MOVIEBOX_API_BASE_URL` (see the warning below) |
 | Rate limit | roughly 300 requests / 5 minutes |
 | Response envelope | `{ status, statusCode, creator, endpoint, data }` |
 
-**The key is public.** VEYRA has no backend, so the key is compiled into the web bundle and the Android APK and is sent by the client. `.env.example` contains placeholders; `.env.local` (git-ignored) holds the working key; the Android workflow receives both values as build environment variables (`VITE_ZST_API_KEY` comes from a repository secret). There is no proxy server, and none is invented.
+**The key ships with the app.** VEYRA has no backend, so the endpoint and key are compiled into the web bundle and the Android APK (`DEFAULT_API_BASE_URL` / `DEFAULT_API_KEY`) and sent by the client on every request. A clone, a local dev run and a CI-built APK therefore work with zero setup. `resolveApiConfig()` lets `VITE_MOVIEBOX_API_BASE_URL` / `VITE_ZST_API_KEY` override the defaults at build time — a blank override falls back to the default rather than disabling the catalog — and `assertApiBaseUrl()` still fails closed with a coded error if a build is handed an empty, relative or non-HTTP base URL. There is no proxy server, and none is invented.
 
 ## Routes VEYRA calls (and nothing else)
 
@@ -133,12 +134,13 @@ Checked on 2026-10-08 with the provider key:
 
 ```bash
 npm ci
-cp .env.example .env.local     # VITE_MOVIEBOX_API_BASE_URL + VITE_ZST_API_KEY (placeholders in the repo)
 npm test                       # normalizer, media, subtitle, client unit tests
 npm run test:ssr               # renders every screen with real catalog shapes
-npm run build                  # web bundle (env is inlined here)
-npx cap sync android           # copies the bundle + env into the APK assets
+npm run build                  # web bundle (configuration is inlined here)
+npx cap sync android           # copies the bundle into the APK assets
 cd android && ./gradlew assembleDebug
 ```
 
-Anything prefixed `VITE_` is public. Do not put credentials, tokens or private infrastructure in `VITE_*` values: they ship in the bundle and the APK.
+No `.env.local` and no repository secret are required: the defaults in `client.js` are used unless an override is set. Copy `.env.example` to `.env.local` only when you want to build against a different endpoint or key; the workflow asserts that the built bundle contains the endpoint and key before the APK is assembled.
+
+Anything prefixed `VITE_` is public, and so are the compiled defaults. Do not put credentials, tokens or private infrastructure in `VITE_*` values: they ship in the bundle and the APK.

@@ -155,12 +155,12 @@ function referenceToContent(reference) {
 function describeError(error) {
   switch (error?.code) {
     case 'API_NOT_CONFIGURED':
-      return 'The catalog API is not configured for this build. Set VITE_MOVIEBOX_API_BASE_URL and VITE_ZST_API_KEY, then rebuild.';
+      return 'The catalog API is not configured for this build. Unset VITE_MOVIEBOX_API_BASE_URL to use the built-in ZST Labs endpoint, or point it at a valid HTTPS URL, then rebuild.';
     case 'INVALID_API_BASE_URL':
     case 'INSECURE_API_BASE_URL':
       return error.message;
     case 'UNAUTHORIZED':
-      return 'The catalog API rejected this build’s API key (HTTP 401/403). Check VITE_ZST_API_KEY and rebuild.';
+      return 'The catalog API rejected this build’s API key (HTTP 401/403). Set VITE_ZST_API_KEY to a working key, or remove the override to fall back to the built-in one, then rebuild.';
     case 'RATE_LIMITED':
       return 'The catalog API is rate limited right now. Cached sections still work — try again in a moment.';
     case 'NOT_FOUND':
