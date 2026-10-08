@@ -9,7 +9,10 @@
     "test": "node --test src/services/moviebox/*.test.js",
     "preview": "vite preview --host 0.0.0.0",
     "cap:sync": "npm run build && cap sync android",
-    "android:debug": "cap sync android && cd android && ./gradlew assembleDebug"
+    "android:debug": "cap sync android && cd android && ./gradlew assembleDebug",
+    "test:ssr": "node scripts/ssr-smoke.mjs",
+    "test:player": "node scripts/player-dom-check.mjs",
+    "verify": "npm test && npm run test:ssr && npm run test:player && npm run build"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
@@ -21,6 +24,7 @@
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
     "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^30.1.2",
     "vite": "^6.3.5"
   }
 }

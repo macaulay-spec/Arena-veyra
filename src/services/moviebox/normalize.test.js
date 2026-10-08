@@ -1,6 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { movieBoxClient, MovieBoxServiceError } from './client.js';
+import {
+  DEFAULT_API_BASE_URL,
+  DEFAULT_API_KEY,
+  MovieBoxServiceError,
+  assertApiBaseUrl,
+  getMovieBoxApiBaseUrl,
+  getMovieBoxApiKey,
+  isMovieBoxConfigured,
+  movieBoxClient,
+  resolveApiConfig,
+} from './client.js';
 import {
   contentReference,
   extractContentList,
@@ -112,9 +122,43 @@ test('restores only provider-tagged catalog references and rejects old fixtures'
   assert.equal(normalizeSavedReference({ id: 'movie-last-signal', title: 'Old sample title' }), null);
 });
 
-test('fails closed when the API base URL is not configured', async () => {
-  await assert.rejects(
-    () => movieBoxClient.getHomepage(),
+test('ships a usable catalog configuration so an unconfigured clone still works', () => {
+  const shipped = resolveApiConfig({});
+  assert.equal(shipped.baseUrl, 'https://api.zstlab.cyou');
+  assert.match(shipped.apiKey, /^zst_/);
+  assert.equal(getMovieBoxApiBaseUrl(), 'https://api.zstlab.cyou');
+  assert.equal(isMovieBoxConfigured(), true);
+  assert.equal(getMovieBoxApiKey().length > 10, true);
+});
+
+test('environment overrides win over the built-in defaults', () => {
+  const overridden = resolveApiConfig({
+    VITE_MOVIEBOX_API_BASE_URL: 'https://staging.example/',
+    VITE_ZST_API_KEY: 'zst_other',
+  });
+  assert.equal(overridden.baseUrl, 'https://staging.example');
+  assert.equal(overridden.apiKey, 'zst_other');
+  // A blank override must not blank out a working configuration.
+  assert.equal(resolveApiConfig({ VITE_ZST_API_KEY: '   ' }).apiKey, DEFAULT_API_KEY);
+  assert.equal(resolveApiConfig({ VITE_MOVIEBOX_API_BASE_URL: '' }).baseUrl, DEFAULT_API_BASE_URL);
+});
+
+test('a genuinely misconfigured build still fails closed', () => {
+  assert.throws(
+    () => assertApiBaseUrl(''),
     (error) => error instanceof MovieBoxServiceError && error.code === 'API_NOT_CONFIGURED',
   );
+  assert.throws(
+    () => assertApiBaseUrl('not-a-url'),
+    (error) => error instanceof MovieBoxServiceError && error.code === 'INVALID_API_BASE_URL',
+  );
+  assert.throws(
+    () => assertApiBaseUrl('ftp://api.example'),
+    (error) => error instanceof MovieBoxServiceError && error.code === 'INVALID_API_BASE_URL',
+  );
+  assert.throws(
+    () => assertApiBaseUrl('http://api.example', { prod: true }),
+    (error) => error instanceof MovieBoxServiceError && error.code === 'INSECURE_API_BASE_URL',
+  );
+  assert.equal(assertApiBaseUrl('https://api.zstlab.cyou/'), 'https://api.zstlab.cyou/');
 });
