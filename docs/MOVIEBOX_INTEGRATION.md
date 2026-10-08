@@ -130,6 +130,22 @@ Checked on 2026-10-08 with the provider key:
 
 **Not verified:** browser CORS behaviour from the app origin, Android runtime networking, real-device playback/DASH-free streaming stability, how long signed links stay valid, and whether the provider's full-film CDN responds quickly (early reports say it can hang — the fallback ladder exists for that). The provider's proxy-download route is under maintenance, so downloads are best effort by definition.
 
+## Player contract (regression-tested)
+
+The player must never report playback that is not happening:
+
+- the `<video>` element is bound to `quality.streamUrl` through `src` and is remounted per source
+  (`key`), so a media response can never produce a player with no source;
+- the status chip is derived from the element — `PLAYING` requires `!paused && readyState >= 2`;
+  a response that merely arrived shows `BUFFERING`;
+- the timeline prefers `video.duration` after `loadedmetadata` and marks the provider value as an
+  estimate (`~2h 28m`) until then;
+- the 20 s stall watchdog and the quality step-down only run when a source is bound, and an
+  autoplay-blocked element is not blamed on the provider.
+
+`npm run test:player` mounts the real `PlayerScreen` in a DOM (jsdom) against a stubbed provider
+response and fails if any of those break. It is part of `npm run verify` and of the Android workflow.
+
 ## Environment summary
 
 ```bash

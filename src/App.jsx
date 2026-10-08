@@ -576,6 +576,10 @@ function PlayerScreen({
   const [controlsPing, setControlsPing] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  // The status label is derived from the element, never from the API phase
+  // alone: a media response is not playback.
+  const [videoReady, setVideoReady] = useState(0);
+  const [needsGesture, setNeedsGesture] = useState(false);
   const [captionChoice, setCaptionChoice] = useState('off');
   const [captionTrack, setCaptionTrack] = useState(null);
   const [captionNote, setCaptionNote] = useState('');
@@ -597,6 +601,9 @@ function PlayerScreen({
   const seekTargetRef = useRef(startPosition);
   const activeQualityRef = useRef(null);
   const failedSourcesRef = useRef(new Set());
+  // True while autoplay is merely waiting for a tap, so the stall watchdog
+  // does not blame the source for a browser gesture requirement.
+  const gestureBlockedRef = useRef(false);
   const [detailSettled, setDetailSettled] = useState(false);
   const latestRef = useRef({});
   const lastSavedRef = useRef({ at: 0, position: 0 });
@@ -732,14 +739,25 @@ function PlayerScreen({
 
   useEffect(() => {
     const video = videoRef.current;
+    // No stream URL means no media to attach: never load() or play() here, or
+    // the UI would report playback while the element holds nothing.
     if (!video || !activeQuality?.streamUrl) return undefined;
     activeQualityRef.current = activeQuality;
     setBuffering(true);
-    video.load();
+    setCurrentTime(seekTargetRef.current || 0);
+    // The src is bound on the element itself (see the <video> below), so the
+    // browser has already been told what to fetch; play() only starts it.
     const playAttempt = video.play();
-    if (playAttempt?.catch) playAttempt.catch(() => setBuffering(false));
+    if (playAttempt?.catch) {
+      playAttempt.catch((error) => {
+        gestureBlockedRef.current = true;
+        setNeedsGesture(error?.name === 'NotAllowedError');
+        setBuffering(false);
+      });
+    }
     const timer = window.setTimeout(() => {
-      if (video.readyState < 2) failSource('timeout');
+      // Only a stall with a real source and a real play attempt counts.
+      if (video.readyState < 2 && !gestureBlockedRef.current) failSource('timeout');
     }, PLAYER_STALL_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
   }, [activeQuality, failSource]);
@@ -778,6 +796,7 @@ function PlayerScreen({
   const handleLoadedMetadata = () => {
     const video = videoRef.current;
     if (!video) return;
+    setVideoReady(video.readyState);
     setDuration(Number.isFinite(video.duration) ? video.duration : 0);
     const target = seekTargetRef.current;
     if (target > 1) {
@@ -790,6 +809,10 @@ function PlayerScreen({
   };
 
   const handleVideoError = () => {
+    const video = videoRef.current;
+    // An element without a source raises MediaError too; that is not a
+    // provider failure and must not step the quality ladder.
+    if (!video || !activeQualityRef.current?.streamUrl || !video.error) return;
     if (phase === 'loading') return;
     failSource('error');
   };
@@ -823,7 +846,11 @@ function PlayerScreen({
   const changeQuality = (quality) => {
     const video = videoRef.current;
     const position = video?.currentTime || currentTime;
+    // The element is remounted for the new URL; this restores the position once
+    // the new stream has metadata.
     seekTargetRef.current = position;
+    gestureBlockedRef.current = false;
+    setNeedsGesture(false);
     setActiveQuality(quality);
     setSheet('');
     setControlsPing((value) => value + 1);
@@ -832,6 +859,9 @@ function PlayerScreen({
   const changeEpisode = (episode, seasonValue) => {
     seekTargetRef.current = 0;
     failedSourcesRef.current = new Set();
+    gestureBlockedRef.current = false;
+    setNeedsGesture(false);
+    setVideoReady(0);
     if (seasonValue !== undefined && seasonValue !== null) setSeasonNumber(seasonValue);
     setEpisodeNumber(episode.episodeNo || episode.number);
     setSheet('');
@@ -916,7 +946,18 @@ function PlayerScreen({
   }, [playing, sheet, controlsPing]);
 
   const progressPercent = duration ? Math.min(100, (currentTime / duration) * 100) : 0;
+  // Element duration wins once metadata arrives; the provider value is only an
+  // estimate until then, and is labelled as one.
+  const durationIsEstimate = !duration && Boolean(media?.duration);
   const totalDuration = duration || media?.duration || 0;
+  const hasSource = Boolean(activeQuality?.streamUrl);
+  const statusLabel = phase === 'loading' ? 'CONNECTING'
+    : phase === 'error' ? 'SOURCE BUSY'
+      : phase === 'unavailable' ? 'NO SOURCE'
+        : !hasSource ? 'NO SOURCE'
+          : playing && !buffering && videoReady >= 2 ? 'PLAYING'
+            : buffering || videoReady < 2 ? 'BUFFERING'
+              : 'PAUSED';
   const hasCaptions = Boolean(media?.captions?.length);
 
   return (
@@ -924,11 +965,15 @@ function PlayerScreen({
       <div className="player-stage" style={{ backgroundImage: content?.backdrop ? `url('${content.backdrop}')` : undefined }}>
         <video
           ref={videoRef}
+          key={activeQuality?.streamUrl || 'empty'}
           className="player-video"
+          src={activeQuality?.streamUrl || undefined}
           playsInline
-          preload="metadata"
+          preload="auto"
           poster={content?.poster || content?.backdrop}
+          onLoadStart={() => setVideoReady(0)}
           onLoadedMetadata={handleLoadedMetadata}
+          onLoadedData={() => setVideoReady(videoRef.current?.readyState || 0)}
           onDurationChange={() => {
             const video = videoRef.current;
             if (video) setDuration(Number.isFinite(video.duration) ? video.duration : 0);
@@ -939,15 +984,27 @@ function PlayerScreen({
             setCurrentTime(video.currentTime);
             reportProgress({ position: video.currentTime, seconds: video.duration || totalDuration });
           }}
-          onPlay={() => { setPlaying(true); setBuffering(false); }}
+          onPlay={() => {
+            gestureBlockedRef.current = false;
+            setNeedsGesture(false);
+            setPlaying(true);
+            setBuffering(false);
+          }}
           onPause={() => {
             setPlaying(false);
             const video = videoRef.current;
             reportProgress({ position: video?.currentTime || 0, seconds: video?.duration || totalDuration, force: true });
           }}
           onWaiting={() => setBuffering(true)}
-          onPlaying={() => { setBuffering(false); setSourceNote(''); }}
-          onCanPlay={() => setBuffering(false)}
+          onStalled={() => setBuffering(true)}
+          onPlaying={() => {
+            setVideoReady(videoRef.current?.readyState || 0);
+            setBuffering(false);
+            setSourceNote('');
+          }}
+          onCanPlay={() => { setVideoReady(videoRef.current?.readyState || 0); setBuffering(false); }}
+          onCanPlayThrough={() => setVideoReady(videoRef.current?.readyState || 0)}
+          onEmptied={() => { setVideoReady(0); setBuffering(true); }}
           onError={handleVideoError}
           onEnded={handleEnded}
           onClick={() => setControlsPing((value) => (value > 0 ? 0 : value + 1))}
@@ -962,7 +1019,7 @@ function PlayerScreen({
         <header className="player-top">
           <button className="player-back" onClick={onBack} aria-label="Back"><ChevronLeft size={22} /><span>{content?.title || 'VEYRA'}</span></button>
           <div className="player-top-center">
-            <span className="player-status"><span /> {phase === 'loading' ? 'CONNECTING' : phase === 'error' ? 'SOURCE BUSY' : phase === 'unavailable' ? 'NO SOURCE' : 'PLAYING'}</span>
+            <span className="player-status"><span /> {statusLabel}</span>
             {episodeLabel && <span className="player-episode-heading">{episodeLabel}</span>}
           </div>
           <div className="player-top-actions">
@@ -974,7 +1031,13 @@ function PlayerScreen({
           <div className="buffering-indicator"><Loader2 size={30} /><span>Requesting a fresh stream link…</span></div>
         )}
 
-        {phase === 'ready' && buffering && <div className="buffering-indicator"><Loader2 size={26} /><span>Buffering</span></div>}
+        {phase === 'ready' && needsGesture && (
+          <div className="buffering-indicator"><Play size={26} fill="currentColor" /><span>Press play to start</span></div>
+        )}
+
+        {phase === 'ready' && !needsGesture && buffering && (
+          <div className="buffering-indicator"><Loader2 size={26} /><span>{hasSource ? 'Buffering' : 'Waiting for a source'}</span></div>
+        )}
 
         {(phase === 'error' || phase === 'unavailable') && (
           <div className="player-error">
@@ -1021,7 +1084,7 @@ function PlayerScreen({
               <div className="time-row">
                 <span>{formatDuration(currentTime)}</span>
                 <span>{progressPercent ? `${Math.round(progressPercent)}%` : '—'}</span>
-                <span>{formatDuration(totalDuration)}</span>
+                <span>{durationIsEstimate ? `~${formatDuration(totalDuration)}` : formatDuration(totalDuration)}</span>
               </div>
               <div className="player-tools">
                 <button onClick={() => setSheet('quality')}><Gauge size={15} /><span>{activeQuality?.label || 'Quality'}</span></button>

@@ -40,11 +40,17 @@ Vite binds to `0.0.0.0`. If the configuration is ever empty or malformed, the ap
 ## Checks
 
 ```bash
-npm test          # service-layer unit tests (normalizer, media, subtitles, client)
-npm run test:ssr  # renders every screen through Vite SSR with real catalog shapes
-npm run build     # production bundle
-npm run verify    # all three
+npm test           # service-layer unit tests (normalizer, media, subtitles, client)
+npm run test:ssr   # renders every screen through Vite SSR with real catalog shapes
+npm run test:player # mounts the real player in a DOM and asserts the <video> gets a streamUrl
+npm run build      # production bundle
+npm run verify     # all four
 ```
+
+`test:player` exists because a media response is not playback: it feeds the real client a
+`/api/media` payload and fails if the `<video>` element ends up without a `src`, if the raw CDN
+url is bound instead of the provider proxy link, or if the UI says PLAYING while the element has
+no frames.
 
 ## Android debug APK
 

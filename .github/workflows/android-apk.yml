@@ -60,6 +60,9 @@ jobs:
       - name: Run render smoke test
         run: npm run test:ssr
 
+      - name: Check the player binds a real stream URL
+        run: npm run test:player
+
       - name: Validate frontend production build
         run: npm run build
 
