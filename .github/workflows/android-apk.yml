@@ -20,10 +20,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      VITE_MOVIEBOX_API_BASE_URL: https://movieboxapi.vercel.app
+      # Public base URL of the VEYRA API layer. Set the repository variable
+      # VEYRA_API_BASE_URL (Settings -> Secrets and variables -> Actions ->
+      # Variables). The provider credential belongs to the API deployment and
+      # is never part of this build or the APK.
+      VITE_VEYRA_API_BASE_URL: ${{ vars.VEYRA_API_BASE_URL }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+
+      - name: Require the VEYRA API base URL
+        run: |
+          if [ -z "$VITE_VEYRA_API_BASE_URL" ]; then
+            echo "::error::Set the VEYRA_API_BASE_URL repository variable to the deployed VEYRA API base URL."
+            exit 1
+          fi
+          case "$VITE_VEYRA_API_BASE_URL" in
+            https://*) ;;
+            *) echo "::error::VEYRA_API_BASE_URL must be an absolute https URL."; exit 1 ;;
+          esac
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
