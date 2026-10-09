@@ -16,6 +16,8 @@ export const copy = Object.freeze({
     similar: "We couldn't load more titles like this.",
     episodes: "We couldn't load the episodes.",
     playback: "We couldn't start playback.",
+    unavailable: "This title isn’t available to play.",
+    unavailableBody: 'It may not be ready to stream yet — try another title.',
     generic: 'Something went wrong.',
   },
   empties: {
@@ -59,9 +61,10 @@ export function friendlyError(error, fallback = copy.errors.generic) {
     case 'NOT_FOUND':
       return copy.errors.details;
     case 'PLAYBACK_UNAVAILABLE':
-    case 'MEDIA_UNAVAILABLE':
     case 'MEDIA_RESOLUTION_FAILED':
       return copy.errors.playback;
+    case 'MEDIA_UNAVAILABLE':
+      return copy.errors.unavailable;
     case 'SUBTITLES_UNAVAILABLE':
       return 'Subtitles are not available for this title.';
     case 'DOWNLOAD_UNAVAILABLE':

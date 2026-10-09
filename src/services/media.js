@@ -89,7 +89,9 @@ async function resolve(path, { item, episode, key, force, signal, params = {} })
   }
   const media = readMedia(payload);
   if (!media.sources.length) {
-    throw new MediaResolutionError(ErrorCodes.PLAYBACK_UNAVAILABLE, 'Playback is not available for this title.');
+    // Distinct from a failed request: the API answered, the title simply has
+    // nothing playable, so the viewer is told that instead of a connection error.
+    throw new MediaResolutionError(ErrorCodes.MEDIA_UNAVAILABLE, 'Playback is not available for this title.');
   }
   remember(cacheKey, media);
   return media;

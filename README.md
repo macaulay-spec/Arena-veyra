@@ -9,8 +9,8 @@ and knows nothing about the provider's shapes.
 VEYRA client  →  VEYRA API layer (server/)  →  ZST Labs  →  VEYRA player
 ```
 
-See [the integration audit](docs/ZST_INTEGRATION.md) for the verified route
-inventory, response shapes and the media/security boundary.
+See [the verified API contract](docs/ZST_LABS_MOVIEBOX_API.md) for the route
+inventory, response shapes, verification status and the media/security boundary.
 
 ## Run locally
 
@@ -37,6 +37,8 @@ Server-only configuration (never in `VITE_*`, never in the repository):
 - `ZST_API_BASE_URL` — defaults to `https://zstlab.cyou/api`.
 - `ZST_MEDIA_PROXY_BASE_URL` — defaults to `https://api.zstlab.cyou`.
 - `VEYRA_CORS_ORIGINS` — optional comma-separated extra allowed origins.
+- `ZST_RATE_LIMIT_COOLDOWN_MS` — optional. Cooldown after the provider answers
+  `429` (default: `Retry-After`, capped at 120 s, else 30 s; `0` disables it).
 
 Deploy the API layer to any Node host and set the client's base URL to it. In
 the Android workflow the public base comes from the `VEYRA_API_BASE_URL`
@@ -99,10 +101,13 @@ demand; catalogue metadata is cached briefly on both sides.
 ## Checks
 
 ```bash
-npm test        # 70 unit tests: provider normalization, model guards, catalog
-                # mapping and caching, media resolution, download state machine,
-                # library persistence, copy mapping, TV navigation
-npm run build   # production web build (dist/)
+npm test          # 79 unit tests: provider normalization, model guards, catalog
+                  # mapping and caching, media resolution, download state machine,
+                  # library persistence, copy mapping, TV navigation, rate-limit
+                  # circuit breaker, playback fallback selection
+npm run smoke:zst # live smoke tests against the real provider (needs ZST_API_KEY);
+                  # 12 checks covering every confirmed endpoint + real source extraction
+npm run build     # production web build (dist/)
 ```
 
 ## Android debug APK
@@ -123,15 +128,31 @@ credential-free APK can never be published pointing at nothing.
 
 ## Verification status
 
-Verified in this workspace:
+Verified in this workspace on 2026-10-08:
 
-- `npm test` — 70 tests, 70 passing.
+- `npm test` — 79 tests, 79 passing.
 - `npm run build` — production build succeeds.
+- `npm run smoke:zst` — 12 checks, 12 passing against the live provider:
+  homepage (52 operations), trending, hot movies/series, popular searches,
+  search suggestions, search, item details with cast, recommendations, media
+  resolution for a movie and for a TV episode, proxy reachability, and real
+  signed stream-source extraction.
 - **Live provider integration** through the VEYRA API layer: health, homepage
-  (17 featured titles, 30 content rails), trending, hot, popular searches,
+  (18 featured titles, 30 content rails), trending, hot, popular searches,
   search, suggestions, details with cast, episodes, recommendations, media
   resolution with real qualities and captions, per-quality stream
   re-resolution, and download URL construction.
+- **Rate-limit handling** — a provider `429` opens a circuit breaker: no
+  in-process retry, follow-up calls fail fast without touching the network,
+  `Retry-After` honoured, 429 never auto-retried client-side. Unit-tested in
+  `server/zst-rate-limit.test.js` + `src/services/errors.test.js` and
+  confirmed live (cooldown answers in ~1 ms instead of ~900 ms of retries).
+- **Honest failure states (browser-verified)** — a title with no playable
+  resource says “This title isn’t available to play.” instead of blaming the
+  connection; playback fallbacks always cross subsystems (proxy → raw CDN), so
+  a relay outage is recoverable; and the details screen renders the provider's
+  cast records instead of crashing the screen (a shape mismatch previously
+  blanked every title with a cast).
 
 Not verified here, and not claimed:
 

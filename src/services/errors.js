@@ -29,13 +29,17 @@ export const ErrorCodes = Object.freeze({
   NOT_CONFIGURED: 'NOT_CONFIGURED',
   CATALOG_UNAVAILABLE: 'CATALOG_UNAVAILABLE',
   PLAYBACK_UNAVAILABLE: 'PLAYBACK_UNAVAILABLE',
+  MEDIA_UNAVAILABLE: 'MEDIA_UNAVAILABLE',
   SUBTITLES_UNAVAILABLE: 'SUBTITLES_UNAVAILABLE',
   DOWNLOAD_UNAVAILABLE: 'DOWNLOAD_UNAVAILABLE',
   INVALID_RESPONSE: 'INVALID_RESPONSE',
 });
 
 /** Codes that are worth another attempt without asking the viewer. */
-const RETRYABLE_HTTP = new Set([408, 425, 429, 500, 502, 503, 504]);
+// 429 is deliberately absent: retrying a rate limit after a few hundred
+// milliseconds only amplifies it. RATE_LIMITED surfaces to the viewer for a
+// manual, backed-off retry instead.
+const RETRYABLE_HTTP = new Set([408, 425, 500, 502, 503, 504]);
 
 export function isCancellation(error) {
   return error?.code === ErrorCodes.ABORTED || error?.name === 'AbortError';

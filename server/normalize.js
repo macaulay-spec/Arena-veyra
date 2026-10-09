@@ -54,6 +54,11 @@ function imageUrl(...values) {
   return undefined;
 }
 
+/** A URL that already goes through a media proxy is never treated as a raw CDN URL. */
+function isProxyUrl(url) {
+  return /\/api\/proxy(?:-download)?\?/i.test(String(url || ''));
+}
+
 function yearOf(releaseDate, fallback) {
   const raw = text(releaseDate, fallback);
   return raw?.match(/\b(?:19|20)\d{2}\b/)?.[0];
@@ -328,7 +333,15 @@ export function normalizeDetails(payload, { subjectId } = {}) {
   };
 }
 
-/** Pull a unix expiry stamp out of a provider URL, including nested proxied ones. */
+/** Pull a signed-media expiry stamp out of a provider URL.
+ *
+ * VERIFIED 2026-10-08: the resolved CDN links consistently carry `sign=<hash>`
+ * (an opaque signature) and `t=<unix expiry>` (seconds), e.g.
+ * `https://bcdnxw…/tran-audio/20250609/<hash>?sign=…&t=1791360623`. The stamp is
+ * also nested inside already-proxied URLs (`?url=https%3A%2F%2F…&t=…`), so the
+ * nested query is searched too. Both parameters are treated as expiry evidence;
+ * `sign` alone is not timestamped, so `t` remains the authority.
+ */
 export function expiresAtFromUrl(...values) {
   for (const value of values) {
     const raw = text(value);
@@ -381,6 +394,7 @@ export function normalizeMediaPayload(payload) {
     const streamUrl = httpUrl(record.streamUrl, record.url);
     const downloadUrl = httpUrl(record.downloadUrl, record.url);
     if (!streamUrl && !downloadUrl) return null;
+    const rawCandidate = httpUrl(record.url);
     return {
       id: text(record.id, height ? `${height}p` : undefined) || `download-${height ?? 'x'}`,
       label: height ? `${height}p` : 'Source',
@@ -388,14 +402,27 @@ export function normalizeMediaPayload(payload) {
       sizeBytes: integer(record.size),
       streamUrl,
       downloadUrl,
+      // The raw signed CDN URL. Playback prefers the authorized proxy, but its
+      // fallback must not be another proxy endpoint: when the proxy is down,
+      // `streamUrl` and `downloadUrl` fail together and a viewer whose network
+      // can reach the CDN directly would still see a playback error.
+      rawUrl: rawCandidate && !isProxyUrl(rawCandidate) ? rawCandidate : undefined,
     };
   }).filter(Boolean);
 
   const isHls = (record) => streamType(record, text(record?.url)) === 'hls';
+  const asChannelList = (value) => asArray(value).map((entry) => ({
+    ...(asRecord(entry) || {}),
+    // VERIFY-STYLE: the provider serves these as `hls`/`dash` channel lists
+    // (verified empty on every title probed 2026-10-08). They are expected to be
+    // playlist entries when populated; the format markers let the mappers
+    // classify them correctly.
+    format: asRecord(entry)?.format || undefined,
+  }));
   const directStreams = [
     ...asArray(streamBlock.streams),
-    ...asArray(streamBlock.hls).map((entry) => ({ ...asRecord(entry), format: 'HLS' })),
-    ...asArray(streamBlock.dash).map((entry) => ({ ...asRecord(entry), format: 'DASH' })),
+    ...asChannelList(streamBlock.hls).map((entry) => ({ ...entry, format: 'HLS' })),
+    ...asChannelList(streamBlock.dash).map((entry) => ({ ...entry, format: 'DASH' })),
   ].map((entry) => {
     const record = asRecord(entry);
     if (!record) return null;
@@ -411,7 +438,7 @@ export function normalizeMediaPayload(payload) {
       // referer and CORS headers for the WebView; the direct CDN URL is kept
       // as the fallback the player can retry with.
       url: proxied?.streamUrl || url,
-      fallbackUrl: proxied ? url : undefined,
+      fallbackUrl: proxied && !isProxyUrl(url) ? url : undefined,
       type: isHls(record) ? 'hls' : streamType(record, url),
       format: text(record.format),
       codec: text(record.codecName),
@@ -425,18 +452,22 @@ export function normalizeMediaPayload(payload) {
   for (const download of downloads) {
     if (directStreams.some((source) => source.height === download.height)) continue;
     const freeHeight = download.height;
+    const primary = download.streamUrl || download.downloadUrl;
+    // Fallback = the first candidate on the *other* subsystem: the raw CDN URL
+    // when the primary is proxied, otherwise the second proxy endpoint.
+    const fallback = [download.rawUrl, download.downloadUrl].find((candidate) => candidate && candidate !== primary);
     directStreams.push({
       id: download.id,
       label: download.label,
       height: freeHeight,
-      url: download.streamUrl || download.downloadUrl,
-      fallbackUrl: download.downloadUrl,
+      url: primary,
+      fallbackUrl: fallback,
       type: 'video',
       format: 'MP4',
       codec: undefined,
       sizeBytes: download.sizeBytes,
       durationSec: undefined,
-      proxied: true,
+      proxied: !isProxyUrl(primary),
     });
   }
 

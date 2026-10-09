@@ -15,6 +15,8 @@ test('every mapped error reads like product copy, never like a log line', () => 
     { code: 'INVALID_RESPONSE' },
     { code: 'NOT_FOUND' },
     { code: 'PLAYBACK_UNAVAILABLE' },
+    { code: 'MEDIA_UNAVAILABLE' },
+    { code: 'MEDIA_RESOLUTION_FAILED' },
     { code: 'SUBTITLES_UNAVAILABLE' },
     { code: 'DOWNLOAD_UNAVAILABLE' },
     { code: 'ANYTHING_ELSE', message: 'the upstream service returned HTTP 502 while calling an internal route' },
@@ -25,6 +27,12 @@ test('every mapped error reads like product copy, never like a log line', () => 
     assert.equal(FORBIDDEN.test(message), false, `leaked technical detail: ${message}`);
     assert.equal(message.includes('502'), false);
   }
+});
+
+test('an unplayable title says so instead of blaming the connection', () => {
+  assert.equal(friendlyError({ code: 'MEDIA_UNAVAILABLE' }), copy.errors.unavailable);
+  assert.equal(friendlyError({ code: 'PLAYBACK_UNAVAILABLE' }), copy.errors.playback);
+  assert.equal(copy.errors.unavailableBody.includes('connection'), false);
 });
 
 test('cancelled requests stay silent instead of flashing an error', () => {

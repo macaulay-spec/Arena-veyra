@@ -568,6 +568,12 @@ function DetailScreen({ item, onBack, onPlay, onToggleSaved, isSaved, onDownload
   const resume = latest ? resumeTarget(latest) : null;
   const resumableEpisode = latest?.episodeId ? episodeList.find((episode) => episode.id === latest.episodeId) : undefined;
   const watchLabel = resume?.isResume ? (latest?.label ? `Resume ${latest.label}` : 'Resume') : 'Watch now';
+  // The API model carries cast as records (`{ name, character, avatar }`), while
+  // card titles can still carry plain strings. Normalise both to renderable rows
+  // here so a provider shape change can never crash the screen.
+  const castList = (content.cast || [])
+    .map((person) => (typeof person === 'string' ? { name: person } : person))
+    .filter((person, index, all) => person?.name && all.findIndex((other) => other?.name === person.name) === index);
 
   const playTitle = () => onPlay(content, {
     entry: latest,
@@ -695,14 +701,14 @@ function DetailScreen({ item, onBack, onPlay, onToggleSaved, isSaved, onDownload
           </section>
         )}
 
-        {content.cast?.length > 0 && (
+        {castList.length > 0 && (
           <section className="cast-section">
             <div className="rail-heading"><div><span className="eyebrow">Cast</span><h2>Who you’ll see</h2></div>{content.director && <span className="cast-note">Directed by {content.director}</span>}</div>
             <div className="cast-list">
-              {content.cast.map((person, index) => (
-                <div className="cast-person" key={`${person}-${index}`}>
-                  <span className={`cast-avatar cast-avatar-${index % 4}`}><span>{person.split(' ').map((part) => part[0]).join('').slice(0, 2)}</span></span>
-                  <span>{person}</span>
+              {castList.map((person, index) => (
+                <div className="cast-person" key={`${person.name}-${index}`}>
+                  <span className={`cast-avatar cast-avatar-${index % 4}`}><span>{person.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</span></span>
+                  <span>{person.name}{person.character && <small>{person.character}</small>}</span>
                 </div>
               ))}
             </div>

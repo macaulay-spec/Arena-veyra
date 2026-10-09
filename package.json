@@ -8,6 +8,7 @@
     "build": "vite build",
     "test": "node --test src/*.test.js src/services/*.test.js src/services/api/*.test.js server/*.test.js",
     "api": "node server/index.js",
+    "smoke:zst": "node scripts/zst-smoke-test.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "cap:sync": "npm run build && cap sync android",
     "android:debug": "cap sync android && cd android && ./gradlew assembleDebug"
@@ -21,7 +22,9 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
+    "@playwright/test": "^1.64.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "playwright": "^1.64.0",
     "vite": "^6.3.5"
   }
 }

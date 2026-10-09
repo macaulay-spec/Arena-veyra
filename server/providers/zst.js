@@ -14,6 +14,27 @@ const DEFAULT_TIMEOUT_MS = 12_000;
 const MEDIA_TIMEOUT_MS = 20_000;
 const DEFAULT_RETRIES = 1;
 
+// Once the provider answers 429, every layer above (this adapter, the API
+// routes, the web client) used to retry within milliseconds, multiplying one
+// rate limit into a sustained storm that kept the provider's window open.
+// This cooldown is the circuit breaker: while it lasts, requests fail fast
+// with PROVIDER_RATE_LIMITED and never touch the network.
+let rateLimitedUntil = 0;
+
+/** Test hook: close the rate-limit circuit. */
+export function resetRateLimitCooldown() {
+  rateLimitedUntil = 0;
+}
+
+/** Cooldown for a 429: env override > Retry-After > 30s default. */
+function rateLimitCooldownMs(response) {
+  const configured = Number(process.env.ZST_RATE_LIMIT_COOLDOWN_MS);
+  if (Number.isFinite(configured) && configured >= 0) return configured;
+  const retryAfter = Number(response?.headers?.get?.('Retry-After'));
+  if (Number.isFinite(retryAfter) && retryAfter > 0) return Math.min(retryAfter * 1000, 120_000);
+  return 30_000;
+}
+
 export class ProviderError extends Error {
   constructor(message, { code = 'PROVIDER_ERROR', status = 0, endpoint = '', retryable = false } = {}) {
     super(message);
@@ -76,6 +97,13 @@ async function request(path, params = {}, {
   if (!providerConfigured()) {
     throw new ProviderError('Provider credential is missing on the server.', { code: 'PROVIDER_NOT_CONFIGURED' });
   }
+  if (Date.now() < rateLimitedUntil) {
+    throw new ProviderError('Provider rate limit cooldown is active.', {
+      code: 'PROVIDER_RATE_LIMITED',
+      status: 429,
+      endpoint: path,
+    });
+  }
 
   let lastError;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
@@ -109,17 +137,20 @@ async function request(path, params = {}, {
         payload = null;
       }
 
-      if (!response.ok) {
+if (!response.ok) {
         const status = response.status;
         const code = status === 401 || status === 403 ? 'PROVIDER_UNAUTHORIZED'
           : status === 429 ? 'PROVIDER_RATE_LIMITED'
             : status >= 500 ? 'PROVIDER_UNAVAILABLE'
               : 'PROVIDER_REJECTED';
+        // 429 is never retried in-process: an immediate retry only deepens the
+        // rate limit. The cooldown above absorbs subsequent calls instead.
+        if (status === 429) rateLimitedUntil = Date.now() + rateLimitCooldownMs(response);
         throw new ProviderError(`Provider responded ${status}.`, {
           code,
           status,
           endpoint: path,
-          retryable: status === 429 || status >= 500,
+          retryable: status >= 500,
         });
       }
       if (!payload || typeof payload !== 'object') {
@@ -187,7 +218,9 @@ export const zstProvider = Object.freeze({
   getPopularSearches: (options = {}) => request('/popular-searches', {}, options),
   search: ({ query, subjectType = 'ALL', page = 1, perPage = 24, ...rest }) => request('/search', { query, subjectType, page, perPage }, rest),
   // The deployed route is singular; the plural spelling is a 404 on this host.
-  getSuggestions: ({ query, perPage = 10, ...rest }) => request('/search-suggestion', { query, perPage }, rest),
+  // VERIFIED 2026-10-08: the provider only honours the snake_case parameter;
+  // `perPage=3` answers with 10 items while `per_page=3` answers with 3.
+  getSuggestions: ({ query, perPage = 10, ...rest }) => request('/search-suggestion', { query, per_page: perPage }, rest),
   getItemDetails: ({ subjectId, detailPath, ...rest }) => request('/item-details', { subjectId, detailPath }, rest),
   getRecommendations: ({ subjectId, page = 1, perPage = 24, ...rest }) => request('/recommendations', { subjectId, page, perPage }, rest),
 

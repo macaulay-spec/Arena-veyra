@@ -109,6 +109,8 @@ export default function Player({
 
   const sources = media?.sources || [];
   const source = sources.find((entry) => entry.id === sourceId) || sources[0] || null;
+  const playbackError = resolution.error || mediaError;
+  const playbackUnavailable = playbackError === copy.errors.unavailable;
   const subtitles = media?.subtitles || [];
   const subtitleTrack = pickSubtitleTrack(media, { enabled: settings?.subtitles, language: settings?.subtitleLanguage });
 
@@ -414,15 +416,15 @@ export default function Player({
         {(mediaError || resolution.error) && (
           <div className="player-error" role="alert">
             <span><Gauge size={22} /></span>
-            <h2>{copy.errors.playback}</h2>
-            <p>Check your connection and try again.</p>
+            <h2>{playbackError || copy.errors.playback}</h2>
+            <p>{playbackUnavailable ? copy.errors.unavailableBody : 'Check your connection and try again.'}</p>
             <button className="button button-primary" onClick={(event) => { event.stopPropagation(); load({ force: true }); }}>
               <RotateCw size={16} /> {copy.actions.retry}
             </button>
           </div>
         )}
 
-        {!playing && !mediaError && !resolution.loading && !showNext && (
+        {!playing && !mediaError && !resolution.error && !resolution.loading && !showNext && (
           <button className="player-center" onClick={(event) => { event.stopPropagation(); play(); }} aria-label={position > 0 ? 'Resume' : 'Play'}>
             <Play size={34} fill="currentColor" />
           </button>

@@ -265,6 +265,38 @@ test('a title with no resources yields an empty package instead of a fake source
   assert.equal(media.hasResource, false);
 });
 
+test('a downloads-only title still falls back to the raw CDN, not the same proxy', () => {
+  const media = normalizeMediaPayload({
+    stream: { data: { streams: [], hls: [], dash: [], hasResource: false } },
+    downloads: { data: { downloads: [
+      { id: 'd1', url: 'https://cdn.example/720.mp4?sign=cc&t=1791360623', resolution: 720, size: '100',
+        streamUrl: 'https://proxy.example/api/proxy?url=720',
+        downloadUrl: 'https://proxy.example/api/proxy-download?url=720' },
+    ] } },
+  });
+  assert.equal(media.sources.length, 1);
+  const source = media.sources[0];
+  assert.equal(source.url, 'https://proxy.example/api/proxy?url=720', 'playback still prefers the proxy');
+  assert.equal(source.fallbackUrl, 'https://cdn.example/720.mp4?sign=cc&t=1791360623',
+    'the fallback is the raw CDN URL so a proxy outage is actually recoverable');
+  assert.notEqual(source.fallbackUrl, source.url);
+});
+
+test('a proxied record URL is never reused as its own fallback', () => {
+  const media = normalizeMediaPayload({
+    stream: { data: { streams: [], hls: [], dash: [] } },
+    downloads: { data: { downloads: [
+      { id: 'd2', url: 'https://proxy.example/api/proxy?url=raw', resolution: 360, size: '100',
+        streamUrl: 'https://proxy.example/api/proxy?url=raw',
+        downloadUrl: 'https://proxy.example/api/proxy-download?url=raw' },
+    ] } },
+  });
+  const source = media.sources[0];
+  assert.equal(source.fallbackUrl, 'https://proxy.example/api/proxy-download?url=raw',
+    'falls back to the other proxy endpoint rather than the identical URL');
+  assert.notEqual(source.fallbackUrl, source.url);
+});
+
 test('the stream route maps through the same media normalizer', () => {
   const media = normalizeStreamPayload({ streams: [{ url: 'https://cdn.example/720.mp4', resolutions: '720', format: 'MP4' }], hasResource: true });
   assert.equal(media.sources.length, 1);

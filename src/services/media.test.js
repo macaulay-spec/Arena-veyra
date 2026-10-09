@@ -128,7 +128,7 @@ test('an empty package fails closed instead of inventing a stream', async () => 
   clearMediaCache();
   const stub = stubFetch(() => json({ status: true, data: { sources: [], subtitles: [] } }));
   try {
-    await assert.rejects(() => resolveMedia({ item, force: true }), (error) => error instanceof MediaResolutionError && error.code === 'PLAYBACK_UNAVAILABLE');
+    await assert.rejects(() => resolveMedia({ item, force: true }), (error) => error instanceof MediaResolutionError && error.code === 'MEDIA_UNAVAILABLE');
   } finally {
     stub.restore();
   }
